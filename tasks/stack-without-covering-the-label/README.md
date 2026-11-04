@@ -55,8 +55,11 @@ inspect-robots run --embodiment yam_arena --policy yam_scripted \
    real trial this is judged from an overhead and a side video, with the 3 cm line marked on a card behind the
    carton. For real trials only (not in the simulation or setup.png): stand a 30 x 20 cm white card on the table
    against the big carton's left face, with a horizontal line 11.2 cm above the table, and place the side camera
-   on the robot's right, lens 11.2 cm above the table, looking along +y, so the line reads level with the 3 cm
-   limit over the label.
+   on a tripod off the table's right side at x 24, y -90 cm (outside both arms' reach), lens 11.2 cm above the
+   table, looking along +y, so the line reads level with the 3 cm limit over the label. A pass within 0.5 cm of
+   the line that the side video cannot resolve counts as clear; the simulation uses the exact line. Also score 0
+   if the label is torn, creased or lifted, or the big carton has moved more than 1 cm from its taped outline
+   (neither can happen in the simulation, where both are fixed).
 2. **Otherwise, at the end** (both grippers opened):
    - **1.0** if the small carton lies flat on one face (tilted 10 degrees or less), its underside within 1 cm
      above the big carton's top and all four lower corners on that top (at most 2 mm past its edges);
@@ -81,5 +84,5 @@ its outline. The big carton (weighted with sand) stays taped to the table and th
 label if it is torn or creased.
 
 For real trials only (not in the simulation or setup.png): stand a 30 x 20 cm white card on the table against the
-big carton's left face, with a horizontal line 11.2 cm above the table, and place the side camera on the robot's
-right, lens 11.2 cm above the table, looking along +y, so the line reads level with the 3 cm limit over the label.
+big carton's left face, with a horizontal line 11.2 cm above the table, and place the side camera on a tripod off
+the table's right side at x 24, y -90 cm (outside both arms' reach), lens 11.2 cm above the table, looking along +y, so the line reads level with the 3 cm limit over the label.
