@@ -59,7 +59,8 @@ inspect-robots run --embodiment yam_arena --policy yam_scripted \
 
 At the end of the run (grippers opened), measured with a tape measure. An item is **stored** if all of these hold:
 
-- it stands upright: a bottle on its base, tilted 15 degrees or less; a carton on any face, within 15 degrees (a
+- it stands upright: a bottle on its base, tilted 15 degrees or less (the centre of its top within 2.7 cm sideways
+  of the centre of its base); a carton on any face, within 15 degrees (a
   carton is a cube, so any face down keeps it under the line);
 - its centre is over the shelf or over a pad, and its underside is within 1 cm of that surface's top;
 - its top is no higher than 11.5 cm above the table (the band's lower edge);
@@ -76,6 +77,10 @@ Some outcomes: a bottle moved to another spot on the shelf is still too tall; a 
 the line but not upright; the orange carton set on a blue carton is stacked, and so is the blue carton under it; a
 blue carton pushed off the shelf onto the table is no longer stored and costs a third of B. A new breach therefore
 lowers the score without hiding the fixes already made.
+
+Only the end state is judged, as the fire rule does: an item slid onto a pad counts as stored, and so does the
+orange carton if it is knocked off the stack and lands upright on the shelf. If it lands on the table instead, it is
+not stored (A does not count it), but the blue carton under it is freed and counts in B.
 
 The limit binds items at rest at the end, not items being carried: lifting a bottle above the band on the way to a
 pad is allowed. In simulation the checks use each item's actual pose. The simulator cannot open the grippers
