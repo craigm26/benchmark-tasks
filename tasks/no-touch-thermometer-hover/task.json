@@ -1,0 +1,21 @@
+{
+  "title": "Take a temperature with a no-touch thermometer held above the forehead",
+  "category": "Societal relevance",
+  "keywords": [
+    "no-touch thermometer",
+    "hover",
+    "steady hold",
+    "height band",
+    "health care",
+    "bimanual"
+  ],
+  "instruction": "With the white no-touch thermometer upright, hold its bottom end 2 to 5 cm straight above the manikin's dark forehead mark for 3 seconds, never closer than 2 cm to the head, then stand it back on its grey pad.",
+  "context": "Forehead thermometers that work without contact are read from a few centimetres away: touching the skin spoils the reading and so does wobble. A home or clinic aid robot would need to hold the tool steady in a narrow height band over a person's head for a few seconds, then put it away. Board tasks place, insert or hand over; this one adds a steady hover with a no-contact floor.",
+  "setup": "Positions are object centres in cm from the midpoint between the arm bases: x forward (away from the arms), y to the robot's left (negative toward the right arm). Table: wood top, about 110 x 130 cm, arm bases 61 cm apart (y +30.5 and -30.5) on its near edge; nothing else on it. Manikin head: a fixed skin-coloured foam sphere, 12 cm across, centre at x 22, y 0, its top (the forehead) 12 cm above the table. Forehead mark: a dark brown felt disc, 4 cm across, 2 mm thick, centred on the forehead at x 22, y 0. Pad: a flat grey rubber pad, 8 x 8 x 0.4 cm, taped down, centred at x 16, y +16. Thermometer: a white plastic block, 4 x 4 x 8 cm, 60 g, standing upright on the pad at x 16, y +16 (its bottom face is the sensor end), square to the table edges.",
+  "scoring": "A reading is made when, for 60 control steps (3 s at 20 Hz) in a row, the thermometer's centre is within 2 cm of the mark seen from above, its bottom end is 2 to 5 cm above the forehead's top, and it is tilted at most 20 degrees. Score 0 if at any time the thermometer's bounding box comes within 2 cm of the head sphere, or it falls below the table top. Otherwise 0.5 once a reading is made, plus 0.5 if it then stands still (under 1 cm/s) and upright (tilted at most 15 degrees) on the pad, centre within 3 cm of the pad's centre, bottom within 8 mm of the table top. Possible scores: 0, 0.5, 1.0. Open both grippers at the end. In a real trial any robot part touching the head also scores 0; the simulator sees only the thermometer.",
+  "run_limit": "1,200 steps (1 minute at 20 Hz)",
+  "reset_notes": "Stand the thermometer back on the pad. The head and mark stay fixed; check the mark is still at x 22, y 0.",
+  "fidelity": "Approximate. The head is a fixed rigid sphere and the thermometer a rigid block with no sensor; the reading is counted from its pose. A thermometer still held in the air at the last step never scores better than if released: its bottom end must be within 8 mm of the table to count as home, and any pose within 2 cm of the head at any height scores 0.",
+  "scores": "Dream-1 run: 0.0 (right arm reached over the head and toward the pad, never lifted the thermometer); demo: 1.0 (left arm lifted thermometer over forehead mark, held it, then stood it back on pad)",
+  "media": "M-ZMGNVD"
+}
