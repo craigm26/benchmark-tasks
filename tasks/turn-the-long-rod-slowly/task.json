@@ -1,0 +1,20 @@
+{
+  "title": "Turn two long rods onto their brackets without their ends moving faster than 20 cm/s",
+  "category": "Societal relevance",
+  "keywords": [
+    "speed limit",
+    "long object",
+    "turning",
+    "hanging a rod",
+    "bimanual"
+  ],
+  "instruction": "Turn each rod across and lay it on a pair of grey brackets, one rod to a pair. Someone is standing by the table, so neither end of a rod may ever move faster than 20 cm/s.",
+  "context": "Installers hanging curtain rods, conduit or broom handles near people keep the ends slow, because turning a long piece swings its ends much faster than the hands move. The board's handover tasks (TK-6AFQ66, TK-BEU9UR) are about which end faces a person and TK-CTCQVY limits tilt; this one limits the speed of the carried object's two ends, which a turn, not the travel, pushes over the limit.",
+  "setup": "Positions are object centres in cm from the midpoint between the arm bases: x forward (away from the arms), y to the robot's left (negative toward the right arm). Table: wood top, about 110 x 130 cm, arm bases 61 cm apart (y +30.5 and -30.5) on its near edge. Rods: two identical blue painted-wood square rods, 30 x 3 x 3 cm, 120 g each, lying along x on the table: rod_l centred at x 16, y +15 and rod_r at x 16, y -15. Brackets: four fixed dark grey blocks, 4 x 4 x 3 cm, in two pairs 16 cm apart along y: left pair centred at x 32, y +5 and y +21; right pair at x 24, y -5 and y -21. A rod hung across a pair lies along y. Post: fixed beige plastic cylinder, 10 cm across, 25 cm tall, centred at x 46, y 0, standing for the person; it plays no part in scoring.",
+  "scoring": "At the end, open both grippers. Each rod end (15 cm either side of the rod's middle) is tracked at 20 Hz; its speed is its movement over the last 0.10 s divided by 0.10. Score 0 for the whole run if any end ever exceeds 0.20 m/s, or a rod falls 5 cm below the table top. Otherwise 0.5 per hung rod: still, middle within 1.5 cm of a pair's midpoint (x 32, y 13 or x 24, y -13), long axis within 10 degrees of y, rolled at most 20 degrees, lowest point within 1 cm of the bracket tops. 0.25 per rod only turned: still, long axis within 10 degrees of y, lowest point within 1 cm of the table top (or of the bracket tops, middle within 4 cm of a pair's midpoint), and carried 2 cm off the table at some point. A rod held in the air counts as neither. In a real trial, film from above at 30 fps: an end that moves over 20 mm in 3 frames breaks the limit.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Lay both rods back along x at their marked spots and mark the four bracket and post outlines on the table once. Nothing is consumed.",
+  "fidelity": "Approximate. Rods are rigid boxes with default friction; the brackets are plain blocks with no notch. Speeds are read from the rods' simulated poses at 20 Hz, so a faster-sampled real trial can read higher. A rod still held in the air at the end earns nothing, as if released (its lowest point more than 1 cm above the table and brackets).",
+  "scores": "Dream-1 run: 0.0 (moved arms toward the rods, never lifted or turned either rod); demo: 1.0 (turned each rod with one arm and laid it across a bracket pair)",
+  "media": "M-AQFKWS"
+}
