@@ -1,0 +1,20 @@
+{
+  "title": "Land a container on two deck twistlocks, then turn both locks shut",
+  "category": "Impact on jobs",
+  "keywords": [
+    "twistlock",
+    "container lashing",
+    "blind landing",
+    "quarter-turn lock",
+    "bimanual"
+  ],
+  "instruction": "Land the red container on the deck twistlocks and lock it down.",
+  "context": "Lashers and deck crews land containers over twistlock cones and turn every lock before the ship sails; a lock left open lets a stack shift at sea (O*NET 53-7062.00 Laborers and Freight, Stock, and Material Movers, Hand; 53-5011.00 Sailors and Marine Oilers). Board tasks seat a cover on one hidden dowel or turn one lamp tube in its sockets; none lands a load over two hidden locators and then locks each from outside it.",
+  "setup": "Positions are object centres in cm from the midpoint between the arm bases: x forward (away from the arms), y to the robot's left (negative toward the right arm). Table: wood top, about 110 x 130 cm, arm bases 61 cm apart (y +30.5 and -30.5) on its near edge. Deck: fixed dark blue painted steel plate, 18 x 29 x 1.0 cm, centred at x 25, y 0 (x 16 to 34, y -14.5 to 14.5). On it, four white paint squares 1.0 x 1.0 cm at x 21.5 and 28.5, y -7.5 and 7.5 (the container's corners), and two white squares 2.8 x 2.8 cm at x 32, y -12.5 and 12.5 (the locked marks). Two twistlocks at x 25, y -5.5 and 5.5, mirror images, each fixed to the deck: grey steel flange 3.0 x 3.0 x 1.0 cm (top 2.0 cm above the table), grey post 1.0 x 1.0 x 1.2 cm, and above it a yellow steel head 1.0 x 2.2 x 0.8 cm (top 4.0 cm above the table), long side along y when open. A hinge turns each head with a grey steel arm 10.0 x 0.8 x 0.5 cm that ends in an orange square handle tab, 2.0 x 2.0 cm and 3.1 cm tall, at x 18 (open) or x 32 (locked), y -12.5 and 12.5; a quarter turn, light damping, no spring. Container: red painted plastic box, 7 x 15 x 8 cm, 100 g, closed top, walls 0.6 cm, floor 0.8 cm thick with two holes 1.6 (x) x 2.8 (y) cm centred 5.5 cm each side of its middle; a white lifting lug 1.8 (x) x 4.0 (y) x 3.0 cm tall on top, centred. It starts upright on the table at x 24, y -19.5, long side along x, so it must be turned 90 degrees to land.",
+  "scoring": "Read from a top photo, a ruler at the container's corners for height, and a tape. Locked: the handle within 1.5 cm of the centre of its white locked mark. Landed: the container's underside within 3 mm of the flange tops (2.0 cm above the table), level, square to its corner marks within 3 degrees, both cones inside the holes. 1.0: landed, both locks locked, the container let go and still for 1 s. 0.5: landed with one or no lock locked. 0.25: lifted at least 3 cm at some point, then left upright with both cones under its footprint but not landed (for example sitting on a head turned before landing, or 5 mm off). Otherwise 0, including a container only pushed along the table, held in the air at the end, or off the table. Possible scores: 0, 0.25, 0.5, 1.0.",
+  "run_limit": "3,600 steps (3 minutes at 20 Hz)",
+  "reset_notes": "Turn both handles back to their open positions (heads long side along y) and stand the container at its start spot, long side along x. Nothing is consumed.",
+  "fidelity": "Approximate. Deck, cones and container are rigid boxes; the locks are hinges with light damping and no detent, and the handles are square tabs. The simulator scores the last step without opening the grippers, so a container whose underside is more than 1 cm above every support counts as not placed, never better than if released. The holes leave 3 mm a side.",
+  "scores": "Dream-1 run: 0.0 (right arm pushed at the container beside the deck, left arm idle, container ended askew on the deck); demo: 1.0 (right arm turned and landed the container, left arm turned both locks, both arms retreated)",
+  "media": "M-HHG3JL"
+}
