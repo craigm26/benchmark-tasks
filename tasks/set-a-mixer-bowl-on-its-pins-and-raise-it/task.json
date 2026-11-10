@@ -1,0 +1,20 @@
+{
+  "title": "Set a mixer bowl's ears on its support pins under the beater, then raise it and lock the lift",
+  "category": "Impact on jobs",
+  "keywords": [
+    "bowl-lift mixer",
+    "locating pins",
+    "seating",
+    "bimanual",
+    "lift lock"
+  ],
+  "instruction": "Put the steel bowl on the mixer, raise it into mixing position and lock the lift.",
+  "context": "Bakers (O*NET 51-3011.00) mount bowls on bowl-lift mixers: ears over the support pins, then the lift raises the bowl round the beater. A bowl off a pin jams or is thrown at start. Here the raised cradle is held up while a cross bolt goes in, as on pin-locked lift tables. Closest board task: 'Seat a jig plate on its round and diamond locating pins'.",
+  "setup": "Centres in cm from the midpoint between the arm bases (x forward, y left); z above the oak table. Pad: fixed dark grey 11 x 11 x 1 at x 25, y -17. Bowl: loose, 140 g, steel-grey open box 9 x 9 x 8, walls 0.8, on the pad. Dark ears 4 (x) x 3 (y) x 1 on its left and right sides, undersides 3 above its base, each with a 1.4 square hole 6 from the bowl's axis. Orange lug 1.2 x 0.8 x 3 on the back wall, 4 to 7 up. Green grip tab 7 (x) x 2.4 x 3 on the front wall, 5 to 8 up. Mixer, fixed, dark: column x 33 to 37, y -5 to 5, z 0 to 28; foot x 33 to 39, same width, 2 high; head x 24 to 37, z 24 to 28. White beater 3 x 1 x 9.5 under the head at x 27, y 0, bottom z 14.5. Grey guide on the column face: two rails x 32 to 33, y +-1 to +-3, z 15 to 22 (channel 2 wide). Lift frame: grey, 60 g, on a vertical slide, travel 11.5, at its lowest. Arms x 24 to 31.8, y +-5 to +-7, z 0.5 to 4.5, joined by a back bar x 31.8 to 32.8, z 0.5 to 3.5. Orange pins 0.8 x 0.8 x 1.5 on the arms at x 27, y +-6. Red handle 2 x 4 x 5.5 at x 27, y 14, z 3 to 8.5, on a red bracket 2 x 5 x 1.5 from the left arm. Red lock tab x 31.8 to 36, y -8.6 to -5.6, z 0.5 to 2, beside the column. Lock: fixed dark post 2.4 x 3 x 8.9 at x 34.5, y -13.5. Blue bolt, loose, 80 g, on a level slide: bar 2 (x) x 10.4 (y) x 1.5, top z 10.9, tip at y -9.2; blue knob 2 x 4 x 4.5 on top, centre y -17.6. It slides 3.6 toward the column and starts out. It passes under the tab only with the frame 10.4 or more up; the frame let down on it rests 10.4 up. No springs.",
+  "scoring": "Judged at the end, with the grippers open. 1.0: bowl seated (both holes within 4.5 mm of their pins, both ear undersides within 3 mm of the arm tops, bowl level within 3 degrees), frame let down on the bolt, 10.0 to 10.65 cm up, lock bolt 2.6 cm or more in, lug inside the channel (centre within 4 mm of its centre line), bowl still (under 1 cm/s), all held for 1 s. 0.5: the bowl was seated and still for 1 s at some point, whatever it ends as. 0.25: one ear was on its pin (hole within 4.5 mm, underside within 4 mm of the arm top) and still for 1 s. Else 0. A raised frame without the bolt earns no more: it falls when let go. A bowl off a pin cannot rise: its lug stops on the guide. Raising or locking the empty frame scores 0. A bowl held up at the end, with no support within 1 cm, scores 0. Check: ruler at the ears, the handle and the bolt; side photo of the lug.",
+  "run_limit": "3,600 steps (3 minutes at 20 Hz)",
+  "reset_notes": "Hold the lift handle, raise the frame off the bolt, pull the bolt out, lower the frame to its stops, and put the bowl back on the pad, tab toward the robot. Nothing is consumed.",
+  "fidelity": "Approximate. All parts are rigid boxes with square holes and 3 mm clearance per side. The lift is a plain damped slide, held up by hand until a cross bolt goes in under it; a real mixer's lift lever locks over centre with one hand, and a rear guide stands in for its bowl clamp. The simulator scores the last step without opening the grippers, so a bowl held more than 1 cm above every support counts as not placed, never better than if released.",
+  "scores": "Dream-1 run: 0.0 (Both arms reached over the mixer and handled the bowl, but never seated it on the pins); demo: 1.0 (Right arm set the bowl on the pins, left arm raised the lift, right arm pushed in the bolt)",
+  "media": "M-KWEPRL"
+}
