@@ -1,0 +1,20 @@
+{
+  "title": "Hook a small engine's throttle link into the carburettor, then slide it onto its studs",
+  "category": "Impact on jobs",
+  "keywords": [
+    "assembly order",
+    "throttle link",
+    "stud mounting",
+    "small engine",
+    "hook then slide"
+  ],
+  "instruction": "Refit the carburettor to the engine and hook up its throttle link.",
+  "context": "Small engine mechanics refit a carburettor by hooking the throttle link into its lever first and only then sliding it onto the intake studs; mounted first, the link cannot reach its hole and the job is redone (O*NET 49-3053.00 Outdoor Power Equipment and Other Small Engine Mechanics; 49-3052.00 Motorcycle Mechanics). Board tasks hang parts on studs or pins; none must be linked first, then mounted.",
+  "setup": "Positions are object centres in cm from the midpoint between the arm bases: x forward (away from the arms), y to the robot's left (negative toward the right arm). Table: wood top, arm bases 61 cm apart on its near edge. Engine (fixed): dark grey block x 33 to 38, y -8 to +10, 16 cm tall; black gasket face on its front (x 32.8 to 33, y -3 to +7, z 6 to 12 above the table); two steel studs 0.8 x 0.8 cm, x 28.5 to 32.8, at y -1.5 and y +5.5, 9 cm above the table; grey intake pad x 28.3 to 32.8, y -3 to +7, 6.9 cm tall, under the studs. Throttle link: grey bar 8 x 1 x 1 cm at y 6.8 to 7.8, z 16.5 to 17.5, x 24.3 to 32.3, sliding along x in a grey guide on the block top (stroke 5.5 cm, resting at its -x end); a grey 1 x 1 cm leg hangs 4.5 cm from the bar's -x end and carries an orange pin 1 x 1 cm, 3.2 cm long, pointing toward -y, tip at y 3.6, centre 12.2 cm above the table, at x 24.8. Muffler (fixed): rust-brown box x 30 to 38, y -18 to -9, 10 cm tall, 1 cm from the block. Carburettor: one rigid part, 90 g, standing on the table, bounding box centred at x 22, y -15, flange toward +x. Yellow flange 1 x 10 x 4 cm with two 1.4 x 1.4 cm holes; blue body 4 x 4 cm and 4 cm tall, plus a 2.8 cm intake horn behind it; green grip tab 1.8 (x) x 3 (y) x 3.5 cm on the horn's top; yellow throttle lever plate 3 cm x 0.6 cm x 3.5 cm tall on the body's +y side with a 1.6 x 1.6 cm square hole. Clearances are 3 mm a side at the studs and the pin. Seated, the flange is on the gasket, 7 cm above the table, resting on the pad, and the link is at 5 cm.",
+  "scoring": "Read the final pose, with the grippers open, from a top photo and a ruler; the hooked and on-the-studs flags are kept over the run. Hooked: the pin passes through the lever hole (centre within 5 mm), tip past the plate's inner face. Seated: flange within 3 mm of the gasket, both studs through the holes, tilted at most 3 degrees. 1.0: hooked and seated, nothing held. 0.5: hooked at some point with the flange within 3 cm of the gasket. 0.25: hooked for 1 s with the carburettor lifted at least 1 cm. Otherwise 0. Seated but not hooked scores 0: on the studs it cannot move sideways, so the pin cannot enter. The carburettor must be lifted 7 cm to reach the studs, so pushing it scores 0. Possible scores: 0, 0.25, 0.5, 1.0.",
+  "run_limit": "3,600 steps (3 minutes at 20 Hz)",
+  "reset_notes": "Stand the carburettor back at its start with the flange toward the engine and push the link back to the -x end of its guide. Nothing is consumed.",
+  "fidelity": "Approximate. Parts are rigid boxes; the holes are square, and the studs and pin are square bars. The link is a sliding joint with light damping. The pad under the seated carburettor keeps it level, as the real intake's mounting does. The simulator scores the final step without opening the grippers, so a carburettor whose bottom is more than 1 cm above every support counts as not placed.",
+  "scores": "Dream-1 run: 0.0 (dragged the carburettor along the table in front of the engine, never lifted it); demo: 1.0 (right arm picked up the carburettor, carried it to the engine face, released and withdrew)",
+  "media": "M-AVJW8Y"
+}
