@@ -1,0 +1,20 @@
+{
+  "title": "Hang a bypass closet door on its track and run it shut",
+  "category": "Impact on jobs",
+  "keywords": [
+    "door hanging",
+    "head track",
+    "floor guide",
+    "tilt and swing",
+    "carpentry"
+  ],
+  "instruction": "Hang the white closet door on its track and slide it shut.",
+  "context": "Carpenters and building maintenance workers hang bypass closet doors by lifting the top into the head track, swinging the bottom in over the floor guide and letting it down onto it, then checking it runs shut to the jamb (O*NET 47-2031.00 Carpenters; 49-9071.00 Maintenance and Repair Workers, General). Board door tasks hang doors on pin or lift-off hinges and open sliding doors; none hangs a panel that must be captured top and bottom. This one adds a top lifted into a channel past the drop the foot needs, the foot swung over a guide and set down, then a run to the jamb.",
+  "setup": "Positions are object centres in cm from the midpoint between the arm bases: x forward (away from the arms), y to the robot's left; heights are above the table top. Table: oak top, nothing else on it. Head track, fixed, dark grey painted steel: a plate 8 x 46 x 1.5 cm (x 32, y 0, z 18.3 to 19.8) on two end posts 8 x 2 x 18.3 cm at y -22 and y +22 (the +y post, on the left arm's side, is the jamb; its inner face is at y 21); a front lip and a rear lip, each 1 x 42 x 4.8 cm (z 13.5 to 18.3), at x 28.5 and x 33.5, so the channel between them is 4.0 cm wide (x 29 to 33). Floor guide rib, fixed, orange painted steel, 0.8 x 42 x 1.5 cm at x 31, y 0, running along y. The other door, fixed, silver aluminium panel 1 x 20.5 x 16.5 cm at x 35, y -10 (z 0.5 to 17). Door, loose, 100 g: white painted wood panel 1.8 (x) x 12 (y) x 14 (z) cm; at each end of its bottom a black rubber shoe of two cheeks 0.6 x 2.0 x 1.2 cm either side of a 1.8 cm gap (shoe centres 5 cm from the door's middle, so the rib has 5 mm to spare on each side); a blue plastic handle 2.5 (x) x 1.8 (y) x 3.0 (z) cm on the face toward the arms, 3.5 cm toward the -y end from the door's middle, its centre 7 cm above the panel's bottom. Start: door standing on its shoes on the table at x 17, y +6 (y 0 to 12), handle toward the arms. Hung: door centred on x 31, panel bottom on the rib. Shut: y 9 to 21.",
+  "scoring": "Open the grippers, then measure. Hung: both shoes straddle the rib (rib between the cheeks, cheeks overlapping the rib's height by 8 mm or more), the door top between the lips (touching one counts) and 1.5 cm or more above the lips' bottoms (z 15 cm or more), and the door within 10 degrees of upright. Shut: the door's +y edge within 3 mm of the jamb (y 20.7 or more). 1.0: hung and shut. 0.5: hung, not shut. 0.25: at any time, for 1 s, the door top was between the lips 1 cm or more above their bottoms with no part of the door touching the table. Otherwise 0. A door leaned on the track with its shoes beside or on the rib is not hung. A door with its lowest point more than 3 cm above the table scores 0. Possible scores: 0, 0.25, 0.5, 1.0.",
+  "run_limit": "3,600 steps (3 minutes at 20 Hz)",
+  "reset_notes": "Stand the door on its shoes at x 17, y +6, handle toward the arms. Nothing else moves between trials.",
+  "fidelity": "Approximate. Door and track are rigid boxes (door 100 g, friction 1.0); no rollers, springs or screws. The simulator scores the last step without opening the grippers, so a door whose shoes are more than 1 cm above the rib counts as not hung, and one held more than 3 cm up scores 0. A door leaning on a lip may sit 1.5 mm into it (contact softness).",
+  "scores": "Dream-1 run: 0.0 (right arm reached over the track toward the door, never hung it); demo: 1.0 (left arm lifted door into track, set it on the rib, slid it left, released)",
+  "media": "M-EDSQ33"
+}
