@@ -1,0 +1,20 @@
+{
+  "title": "Centre a square block in a four-jaw chuck by bringing in each pair of opposite jaws",
+  "category": "Impact on jobs",
+  "keywords": [
+    "four-jaw chuck",
+    "independent jaws",
+    "centring",
+    "machine setup",
+    "bimanual"
+  ],
+  "instruction": "Centre the yellow block in the four-jaw chuck.",
+  "context": "Lathe and vertical turning setters centre square and odd-shaped work in independent four-jaw chucks, bringing each pair of opposite jaws in until the work runs true before any cut (O*NET 51-4034.00 Lathe and Turning Machine Tool Setters, Operators, and Tenders, Metal and Plastic; 51-4041.00 Machinists). The board task 'Chuck a bar in a lathe and put the key away' closes a self-centring chuck, and 'Hold a block in a vise while the jaw closes' has one moving jaw; here four jaws move one at a time, and a jaw closed alone pushes the block off centre.",
+  "setup": "Positions are object centres in cm from the midpoint between the arm bases: x forward (away from the arms), y to the robot's left (negative toward the right arm); z is height above the table top. Table: oak-coloured top, about 110 x 130 cm, arm bases 61 cm apart (y +30.5 and -30.5) on its near edge; nothing else on it. Riser: grey steel, 14 x 14 x 4 cm, centred at x 27, y 0, fixed. Chuck face: dark grey steel, 14 x 14 x 1 cm on the riser (face at z 5), fixed, axis at x 27, y 0. Four jaws, each 50 g, a slide 4.55 x 3.0 x 1.5 cm tall (z 5.2 to 6.7) with an upright grip tab 2.0 x 3.0 x 3.0 cm tall on its outer end (z 6.7 to 9.7), riding 0.2 cm above the face on its own radius with 3.6 cm of travel and a little drag (stands in for the jaw screw). Open, each inner face is 5.5 cm from the axis and each tab's centre 9.05 cm. +x jaw and -x jaw orange: tab centres at x 36.05 and x 17.95, y 0. +y jaw and -y jaw white: tab centres at x 27, y +9.05 and y -9.05. At each jaw's outer end of travel a white rim mark 1 x 3 x 0.1 cm lies on the table against it: x 37.55 and x 16.45 (y 0), y +10.55 and y -10.55 (x 27). Block: yellow painted steel, 4.0 x 4.0 x 8.0 cm tall, 80 g, standing at x 21, y +17, square to the table edges. Tool post: fixed grey steel block 3.5 x 6 x 10 cm tall, x 46 to 49.5, y -3 to +3, with a black cutting insert 0.7 x 2 x 1 cm on its face toward the +x jaw (x 45.3 to 46, y -1 to +1, z 7 to 8).",
+  "scoring": "Open both grippers first. On the face: block upright (tilt at most 2 degrees) with its bottom within 2 mm of the chuck face. A pair of opposite jaws grips when each inner face is within 1.5 mm of the block side facing it (block turned at most 3 degrees off square). Centred on an axis: block centre within 1.5 mm of the chuck axis along that pair's direction. 1.0: on the face, both pairs grip and the block is centred on both axes, still for 1 s. 0.5: on the face, one pair grips and the block is centred on its axis. 0.25: on the face, centre within 2 cm of the axis and between all four jaws. Otherwise 0, including a block on the table, on a jaw, tipped, held up or off the table. Ruler: each jaw's outer end to its white mark is its travel; equal within a pair to 1.5 mm.",
+  "run_limit": "3,600 steps (3 minutes at 20 Hz)",
+  "reset_notes": "Slide all four jaws back to their open stops (each outer end on its white mark) and stand the block at its start spot. Nothing is consumed. In a real trial keep fingers off the cutting insert while working the +x jaw.",
+  "fidelity": "Rigid-body approximation: jaws are damped slides (300 Ns/m) on a smooth face (no screw, torque or dial indicator), the block is a plain steel box and the insert is a fixed black box. The simulator scores the last step with the grippers still closed, so a block whose bottom is more than 2 mm above the face counts as not placed. The arms' keep-clear of the insert is a real-trial rule the scorer cannot see.",
+  "scores": "Dream-1 run: 0.0 (placed block on chuck but tilted across jaws, left arm hovering); demo: 1.0 (carried block to chuck, closed jaw pairs in turn, centred it, retreated)",
+  "media": "M-WSVGHA"
+}
