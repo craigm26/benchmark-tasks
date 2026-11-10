@@ -1,0 +1,20 @@
+{
+  "title": "Return a cryo canister to its marked place in a dewar",
+  "category": "Impact on jobs",
+  "keywords": [
+    "lab technician",
+    "cryo storage",
+    "blind placement",
+    "insertion",
+    "index notch"
+  ],
+  "instruction": "Return the orange canister to the dewar at the green-marked position.",
+  "context": "Biological technicians (O*NET 19-4021.00) and clinical laboratory technologists (29-2011.00) return cell-line canisters to liquid nitrogen dewars: each goes down the neck, is moved under the shoulder to its place and hung by its handle in the matching index notch, so the inventory map finds it. Board tasks lift baskets out of wells or slide small parts under lips; none sets a part blind under an overhang and indexes it by its handle.",
+  "setup": "Positions in cm from the midpoint between the arm bases: x forward, y left; heights above the table. Table: oak. Dewar: fixed, white plastic, outer 15 x 23 cm (x 16 to 31, y -4.5 to 18.5), walls 1 cm thick, 7.8 cm tall. A deck (shoulder) at z 7.0 to 7.8 closes the top, with a square neck 8 x 8 cm (x 19.5 to 27.5, y 3 to 11). Index ring on the deck round the neck: grey, 1 cm wide, 0.8 cm tall (top 8.6 cm), with a 3.0 cm wide notch centred at x 23.5 in its +y side and one in its -y side; the deck by the +y notch is green (x 20.5 to 26.5, y 11 to 14.5). Two floor slots stand on the table inside the dewar: black walls 1 cm thick and 0.6 cm tall round a 5.1 x 5.1 cm opening, at x 21 to 26 and y 11.3 to 16.4 (green side, centre y 13.85) and y -2.4 to 2.7. Canister: loose, 100 g, standing on the table at its start. Orange body 4.5 x 4.5 x 5 cm, centred x 23.5, y 23.8. Purple bracket 1.8 x 3.6 x 0.5 cm on its top, off the -y side, and a purple handle 1.8 (x) x 1.0 (y) x 8.5 cm rising from the bracket's end (centre y 19.45, top 14 cm). A purple hook arm 1.8 x 3.3 x 1.0 cm runs from the handle top toward +y, with a purple lip 1.8 x 1.0 x 5 cm hanging from its end (lip bottom 8 cm up). Real build: printed dewar top and canister, bent aluminium handle.",
+  "scoring": "Measure after opening the gripper. Seated: body underside within 3 mm of the table inside the green slot (body centre within 6 mm of x 23.5, y 13.85), tilted at most 4 degrees, hook lip's centre within 6 mm of the notch centre in x and its bottom below the ring top. 1.0: seated and still for 1 s. 0.5: not seated, but upright (at most 15 degrees) inside the dewar with its centre at least 5 cm toward +y of the neck centre (hook on the ring, or resting on a slot wall). 0.25: inside the dewar with its top under the deck, tilted at most 45 degrees (left in the neck, or in the -y slot). Otherwise 0, including a canister on the deck, off the table, or with its underside more than 1.6 cm above the table.",
+  "run_limit": "3,600 steps (3 minutes at 20 Hz)",
+  "reset_notes": "Stand the canister back at its start mark, handle toward -y, and wipe the dewar's slots clear.",
+  "fidelity": "Approximate rigid parts: the dewar, ring, notches and slots are fixed boxes with millimetre clearances; the canister is one 100 g body, smaller than a real one. The simulator scores the last step without opening the grippers, so a canister whose underside is more than 1.6 cm above the table counts as not placed: held in the air never scores better than released. No cold, frost or vial cane.",
+  "scores": "Dream-1 run: 0.0 (Left gripper hovered at the canister without lifting it, right arm drifted forward); demo: 1.0 (Left arm carried the canister over the dewar, set it by the green mark, released, withdrew)",
+  "media": "M-VG6E8Q"
+}
