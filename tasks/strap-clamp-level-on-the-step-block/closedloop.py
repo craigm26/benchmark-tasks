@@ -406,8 +406,10 @@ def _print_states(ctx: ClosedLoopContext) -> None:
     """Diagnostic only: prints where each object is when demo_script ends."""
     try:
         for name, st in ctx.states().items():
+            joints = getattr(st, "joints", None)
+            moving = f" joints={ {k: round(float(v), 4) for k, v in joints.items()} }" if joints else ""
             print(f"CLSTATE {name} pos={np.round(st.pos, 4).tolist()} low={np.round(st.low, 4).tolist()} "
-                  f"high={np.round(st.high, 4).tolist()}", flush=True)
+                  f"high={np.round(st.high, 4).tolist()}{moving}", flush=True)
     except Exception as e:  # noqa: BLE001
         print(f"CLSTATE unavailable: {e}", flush=True)
 
