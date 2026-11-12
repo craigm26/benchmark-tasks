@@ -5,8 +5,8 @@ Every check reads the object's real footprint from its pose (a turned or tipped 
 above, not its axis-aligned bounding box). Units are metres and the station frame (x forward, y left, z up).
 
 Trackers (highest point reached, fastest speed reached) keep state across control steps, because ``score()`` only
-sees the current step. They reset themselves when every tracked object is back at its spawn pose and still, which is
-what a reset between trials looks like from inside ``score()``.
+sees the current step. A tracker's ``clear()`` is meant to be called from an ``on_reset`` callback (mechkit); as a fallback they
+also reset themselves when a real trial reset is seen from inside ``score()`` (every tracked object back at its spawn pose and still).
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ import numpy as np
 
 __all__ = [
     "Rect", "corners", "footprint", "overlaps", "inside", "bottom", "top", "tilt_deg", "is_flat_on", "is_airborne",
-    "PeakTracker",
+    "PeakTracker", "ResetOnJumpTracker",
 ]
 
 
@@ -160,6 +160,34 @@ class PeakTracker:
             self.peaks, self._left_home = {}, False
         if not home:
             self._left_home = True
+        for k, v in values.items():
+            self.peaks[k] = max(self.peaks.get(k, -np.inf), float(v))
+        return dict(self.peaks)
+
+
+class ResetOnJumpTracker(PeakTracker):
+    """A PeakTracker that clears only on a real trial reset. A reset is a teleport: a tracked object that was more than
+    ``jump`` (3 cm) from its home on the previous step is home (within ``home_tol``) on this step, and every tracked
+    object is home and still. No placement moves 3 cm in one 50 ms step, so putting an object back by hand or by the
+    robot never clears the latch."""
+
+    def __init__(self, home: dict, home_tol: float = 0.005, still_speed: float = 0.01, jump: float = 0.03):
+        super().__init__(home, home_tol, still_speed)
+        self.jump = jump
+        self._prev = None
+
+    def clear(self):
+        self.peaks, self._prev, self._left_home = {}, None, False
+
+    def _dists(self, objects) -> dict:
+        return {k: float(np.linalg.norm(np.asarray(objects[k].pos, float) - p)) for k, p in self.home.items()}
+
+    def update(self, objects, values: dict) -> dict:
+        dist = self._dists(objects)
+        if (self._prev is not None and self._at_home(objects)
+                and any(self._prev[k] > self.jump and dist[k] <= self.tol for k in dist)):
+            self.peaks = {}
+        self._prev = dist
         for k, v in values.items():
             self.peaks[k] = max(self.peaks.get(k, -np.inf), float(v))
         return dict(self.peaks)

@@ -1,22 +1,25 @@
-# Stand sample tubes in a water bath with every top above the water line
+# Hold floating sample tubes down in a water bath, caps above the water line
 
-Lab technicians stand sample tubes in a water bath so the contents sit in the heat while the tops stay dry. Here a steel
-bath stands in front of the arms, and four orange tubes wait on the bench: two tall (60 g) and two short (45 g),
-weighted so they sink. The water line is a steel ledge 12 x 1.2 x 0.4 cm fixed to the inside of each side wall, top face
-painted or taped blue, 1.2 cm wide so the top camera can see it, with its centre 6 cm above the table. Every tube has to
-end upright in the bath with its top 1 to 4 cm above the line, which is 7 to 10 cm above the table.
+Lab technicians warm sample tubes in a water bath. A part-filled tube is lighter than the water it pushes aside, so it
+floats: it rides up out of the rack, leans, and its cap ends up in the water. The fix is a hold-down plate that sits on
+the caps and keeps the tubes on their seats, where the sample is under water and the cap is above it.
 
-No one spot suits every tube. A tall tube fits only on the bath floor (top at 9 cm); on the submerged rack it stands
-too high (11.5 cm). A short tube fits only on the rack (top at 8.5 cm); on the floor it is flooded (6 cm). So the robot
-has to match each tube's own height to a support, and one wrong tube fails the run. Bring a storage shelf under its
-sprinkler clearance line sets one upper limit and Put groceries in the fridge assigns shelves by category; here a
-two-sided band picks each tube's support, and every tube must go into a walled bath.
+Here a steel bath stands in front of the arms with a tube rack inside it. Four orange tubes (20 g each, light enough to
+float) wait on the bench, and a white hold-down plate (180 g) lies beside the bath. The robot has to stand each tube in a
+rack opening, where it floats 2.2 cm above its seat, and then lower the plate over the rack's centre post onto the four
+caps. The plate's weight pushes all four tubes down and keeps them there.
+
+What makes this different from loading a rigid rack: the load pushes back. A tube let go in its opening does not stay
+where it was put, the four caps the plate lands on give way under it, and the job is not done until the plate is on its
+post holding all four down.
 
 ## Files
 
 - `tubes_in_the_bath_caps_above_the_line.py`: the task file for the `yam_arena` embodiment (scene, `score()`,
-  `success()`, `demo()`).
-- `belimits.py`: shared geometry helpers the task file imports (outline overlap, tilt, height).
+  `success()`, `demo_script()`).
+- `mechkit.py`: multi-part objects and sprung joints for task files (the rack with its water discs, the plate).
+- `closedloop.py`: lets the scripted demo read the arms' own joint encoders while it runs.
+- `belimits.py`: geometry helpers the task file imports (outline inside an area, tilt, top and bottom heights).
 - `task.json`: the task's details.
 
 ## Run a trial
@@ -24,77 +27,93 @@ two-sided band picks each tube's support, and every tube must go into a walled b
 On an instance set up by the simulation walkthrough, from this folder:
 
 ```bash
-INSTR="Stand all four sample tubes upright in the water bath. Each tube's top must end 1 to 4 cm above the blue water line: lower floods the sample, higher leaves it out of the heat."
+INSTR="Load the four sample tubes into the water bath rack and fit the hold-down plate over them."
 
 # Dream-1
 inspect-robots run --embodiment yam_arena --policy dream \
   -E task=tubes_in_the_bath_caps_above_the_line.py -E object_jitter=0 -E control_hz=20 -E cam_width=320 -E cam_height=176 \
   --instruction "$INSTR" --scorer task_score \
-  --max-steps 1200 --store-frames --log-dir ~/yam-eval/tub-dream
+  --max-steps 3600 --store-frames --log-dir ~/yam-eval/tub-dream
 
-# Scripted demo (full score): one arm at a time. The right arm parks beside the bench while the left sets its short
-# tube on the rack and its tall tube on the floor and parks; then the right arm does the same on its side
+# Scripted demo (full score), one arm at a time. The left arm stands its two tubes in the left openings and parks;
+# the right arm stands its two in the right openings and parks; then the left arm lowers the plate over the post
 inspect-robots run --embodiment yam_arena --policy yam_scripted \
   -E task=tubes_in_the_bath_caps_above_the_line.py -E object_jitter=0 -E control_hz=20 -E cam_width=320 -E cam_height=176 \
   --instruction "$INSTR" --scorer task_score \
-  --max-steps 1200 --store-frames --log-dir ~/yam-eval/tub-demo
+  --max-steps 3600 --store-frames --log-dir ~/yam-eval/tub-demo
 ```
 
-- **Seed and layout:** `-E object_jitter=0` is required: it keeps every tube exactly where the task file puts it, and
+- **Seed and layout:** `-E object_jitter=0` is required: it keeps every object exactly where the task file puts it, and
   the demo's grasps are for those positions.
-- **Runtime per trial:** the demo's plan takes about 55 s of simulated time (1089 steps) and the run ends about 2 s
-  later, when `success()` has held for 6 s; a Dream-1 trial runs up to 1,200 steps (1 minute simulated).
-- **Score:** `task_score` reports 1.0 when `success()` holds for 6 s (all four tubes placed and still), otherwise
-  `score()` at the end of the run. The 6 s hold keeps the run going after the last set-down, so the video shows the
-  gripper open, rise and park clear of the bath.
+- **Runtime per trial:** the demo's plan is 1742 steps (87 s of simulated time) before any trimming; with the trims it
+  ran about 1,750 steps in an offline contact replay, and each trim may take up to 1.5 s longer. The run ends 6 s after
+  the plate is on, when `success()` has held that long. A Dream-1 trial runs up to 3,600 steps (3 minutes simulated).
+- **Score:** `task_score` reports 1.0 when `success()` holds for 6 s (all four tubes held down under the plate,
+  everything still), otherwise `score()` at the end of the run. The 6 s hold keeps the run going after the plate is
+  let go, so the video shows the gripper open, rise and park.
+- **What the demo reads:** the fixed layout in the task file and the arms' own joint encoders, which it uses to trim
+  the hand onto its target before each grasp and release. It reads no simulator object state.
+- **Both arms work, one at a time:** the left arm places two tubes and the plate, the right arm places two tubes.
 
-Wall-clock time on one L40S, including Isaac Sim start-up: about 200 s for the demo and about 200 s for a full Dream-1 trial.
+Wall-clock time on one L40S, including Isaac Sim start-up: about 440 s for the demo and about 660 s for a full Dream-1 trial.
 
 ## Scoring
 
-At the end of the run, open both grippers, then measure each tube's top to the nearest 0.2 cm with a ruler stood on the
-bath rim (rim height 7 cm), so the band of 7 to 10 cm reads 0 to 3 cm above the rim. An upright tube's underside height
-is its top minus its length (8 or 5 cm). A tube is **in the bath** if any part of it, seen from above, is inside the
-walls (x 18 to 32 cm, y -9 to +9 cm).
+At the end of the run, open both grippers, let everything settle, and measure heights from the table top with a ruler.
+The bath rim is 7 cm above the table, so a height can also be read from the rim.
 
-1. **Score 0** if any tube in the bath has its top below 7 cm or above 10 cm, rests more than 1 cm above the floor or
-   rack under its centre, or any tube has left the table.
-2. **Otherwise 0.25 per tube** that is wholly inside the walls, still, standing on the bath floor or the rack
-   (underside within 1 cm of it), tilted 10 degrees or less (high and low edges of its top within 0.5 cm on the
-   ruler; 0.5 cm is 3 cm x sin 10 degrees), with its top from 7 to 10 cm. A tube outside the bath earns 0.
+1. **Score 0** if any tube lies in the bath (tilted more than 45 degrees with any part of it, seen from above, inside
+   the walls: its cap is in the water), or a tube or the plate has left the table.
+2. **Otherwise each tube earns 0.125** if it stands in a rack opening: wholly inside the 5 cm opening seen from above,
+   its underside below the grid (its top under 13 cm), tilted 10 degrees or less (high and low edges of its top within
+   0.5 cm; 0.5 cm is 3 cm x sin 10 degrees), and still.
+3. **It earns 0.125 more** if it is also held down: its top is 9.4 cm or lower (2.4 cm above the rim; a seated tube's
+   top is at 9.0 cm) and the plate is on the post, with the post through its hole, within 10 degrees of level (opposite
+   edges within 2 cm in height) and still.
 
-Possible scores: 0, 0.25, 0.5, 0.75, 1.0. Doing nothing scores 0.
+Possible scores: 0 to 1.0 in steps of 0.125. Doing nothing scores 0.
 
-Some outcomes that score 0 for the run: all four tubes on the floor (the short ones are flooded, top 6 cm); all four on
-the rack (the tall ones stand too high, top 11.5 cm); a short tube dropped onto the floor even if the other three are
-right; a tube lying flat in the bath, on the floor or on the rack; a tube stacked on another; a tube lying across a wall
-with its underside at 7 cm and its top at 10 cm, even with the other three placed, because it rests more than 1 cm above
-the floor under its centre.
+| Outcome | Score |
+| --- | --- |
+| Four tubes standing in the rack, floating (tops at 11.2 cm), plate still on the bench | 0.5 |
+| Two tubes in the rack, two on the bench, no plate | 0.25 |
+| Four tubes in the rack, plate on the post holding all four down | 1.0 |
+| Three tubes in the rack with the plate on the post holding them down, one tube on the bench | 0.75 |
+| Plate on the post, no tubes in the rack | 0 |
+| A tube dropped flat into the bath, whatever else is done | 0 |
+| A tube standing on the grid between openings, or lying on the bench | nothing for that tube |
+| Plate laid on the caps beside the post, or leaning on the post more than 10 degrees | no hold-down credit |
 
-Outcomes that only cost the tube itself: two tubes placed and two left on the bench scores 0.5; a tube knocked over
-outside the bath earns 0 without failing the run; and a tube propped at a slant in the bath with its top in the band,
-such as a tall tube fallen across the rack's edge, earns 0 without failing the run. The bath's 7 cm walls stop a tube
-being pushed in along the table: it has to be lifted over them. The ledges leave y -7.8 to +7.8 cm open, so a standing
-tube's centre stays within y -6.3 to +6.3 cm.
+The bath's 7 cm walls stop a tube being pushed in along the table: it has to be lifted over them. A tube pushed down
+by a gripper without the plate earns no hold-down credit, and floats back up when the gripper opens.
 
-In simulation the checks use each tube's actual pose. The simulator cannot open the grippers before scoring, so a
-tube still held more than 1 cm above the support under it counts as not placed, and over the bath it scores 0 for the
-run; one held lower is judged by the top it would have once released. The rack's height only counts over the rack, so
-a short tube hanging over the open floor at the right height does not pass. The arms' path is not scored; only where the
-tubes end up.
+In simulation the checks use each object's actual pose. The simulator cannot open the grippers before scoring, so a
+tube still held more than 1 cm above the disc under it counts as not placed, and the plate counts as on the post only
+once its underside is at least 3 mm below the post's top. The arms' path is not scored; only where the tubes and the
+plate end up.
+
+## How the water is simulated
+
+The simulator has no fluids. The push of water on an upright tube grows in proportion to how deep its underside is
+below the surface: the weight of the water it displaces, which for a 3 cm tube is 6.9 N per metre of depth. The task
+file gives each rack opening a blue disc on a vertical spring of exactly that stiffness, resting at the water line, with
+damping standing in for the water's drag. A 20 g tube stood on a disc sinks 2.8 cm and stays there, floating with its
+underside 3.2 cm above the table and its top at 11.2 cm, as it would in water 5 cm deep over its seat. Pushed down to
+its seat (the disc's bottom stop, 1 cm above the table) a tube pushes back with 0.15 N; four of them lift with 0.6 N,
+which the 180 g plate (1.8 N) outweighs.
+
+What this leaves out: a floating tube leaning against the side of its opening, splashing, and the water level rising
+about 0.6 cm (to 6.6 cm, below the 7 cm rim) when all four tubes are pushed down.
 
 ## Real-world reset
 
-Mark the four tube spots on the table before the first trial. Between trials, dry the tubes, stand them back at x 12 cm,
-tall at y +15 and -15, short at y +6 and -6, and top the water up to the blue line with room-temperature tap water. The
-bath stays clamped or screwed to the table and the rack stays screwed or epoxied to the bath floor. The tubes are capped
-and sand-weighted so they sink on either support and when lying down: a tall tube's density is 1.06 and a short tube's
-1.27.
-
-With all four tubes in, the water rises about 0.5 cm, still below the 7 cm rim. The band is measured from the marked
-blue line, not from the water surface. The demo's finger pads stop at 6.5 cm, about level with the risen water at the
-last set-downs, so damp pads are acceptable.
+Mark the four tube spots (x 12 cm; y +15, +6, -6, -15) and the plate's spot (x 25, y +21) on the table before the first
+trial. Fill each tube with water to a total of 20 g (about 10 mL in a 10 g tube) and cap it. Fill the bath to the blue
+line with room-temperature tap water with the rack in and no tubes. Between trials, lift the plate off, dry the tubes
+and the plate, stand them back on their spots, and top the water up to the line. The bath stays clamped to the table
+and the rack stays fixed in the bath.
 
 Real trials: tap water only, room temperature; keep cables and electronics clear of the bath; the operator stops the run
-if any part of the arm other than the finger pads reaches the water, and wipes spills before the next trial. A stopped
-run is scored as the tubes stand at the stop, after opening both grippers. The simulation does not show or score this.
+if any part of an arm other than the finger pads reaches the water, and wipes spills before the next trial. A stopped
+run is scored as it stands after both grippers open. The simulation does not show or score this; in the demo the finger
+pads stay 2.4 cm or more above the water line.
