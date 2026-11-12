@@ -1,12 +1,14 @@
 # Drift a sprung splice plate into line, bolt it, then swap the drift for the last bolt
 
-A blue splice plate lies on a grey flange, held by a spring 2.9 cm out of line, so only a thin strip of each flange hole
-shows through it and a bolt cannot start. The robot has to use the orange drift pin: its taper goes into the strip of
-hole A, and as it goes down it cams the plate over until the holes line up. With the drift standing in hole A, a bolt goes
-into hole B. Only then is the drift pulled, which lets the spring pull the plate back until it rests on the first bolt;
-the drift goes back in its holder and the second bolt goes into hole A. Pull the drift before the first bolt and the plate
-springs back, so neither bolt can start. This is the fit-up job of lining up connection holes with a drift pin, bolting
-the free hole, then bolting the hole the drift held. Bolt tightening is not tested.
+A blue splice plate lies over a grey flange, held by springs 2.9 cm out of line, so only a thin strip of each flange hole
+shows through it and a bolt cannot start. The robot has to use the orange drift pin: its tip goes into the strip of
+hole A while the plate is still at rest, and as the taper goes down between the two hole edges it wedges the plate over
+until the holes line up. Pushing the plate over with a gripper, or prying it with the drift, does not count. With the
+drift standing in hole A, a bolt goes into hole B. Only then is the drift pulled, which lets the springs pull the plate
+back until it rests on the first bolt; the drift goes back in its holder and the second bolt goes into hole A. Pull the
+drift before the first bolt and the plate springs back, so neither bolt can start. This is the fit-up job of lining up
+connection holes with a drift pin, bolting the free hole, then bolting the hole the drift held. Bolt tightening is not
+tested.
 
 ## Files
 
@@ -32,7 +34,7 @@ inspect-robots run --embodiment yam_arena --policy dream \
   --instruction "$INSTR" --scorer task_score \
   --max-steps 3600 --store-frames --log-dir ~/yam-eval/dsl-dream
 
-# Scripted demo (full score): the right arm drops the drift into hole A and holds it there; the left arm bolts hole B;
+# Scripted demo (full score): the right arm lowers the drift into hole A by its head and holds it there; the left arm bolts hole B;
 # the right arm pulls the drift, stands it in its holder, then bolts hole A; both arms clear
 inspect-robots run --embodiment yam_arena --policy yam_scripted \
   -E task=drift_the_splice_into_line_then_bolt_it.py -E object_jitter=0 -E control_hz=20 -E cam_width=320 -E cam_height=176 \
@@ -43,41 +45,73 @@ inspect-robots run --embodiment yam_arena --policy yam_scripted \
 - **Seed and layout:** `-E object_jitter=0` is required: the strips of the holes that show are 4 to 10 mm wide and the
   drift's tip is 3 mm wide, so the layout is measured from where the task file puts everything.
 - **Runtime per trial:** the demo finishes in about 70 s of simulated time (1,400 steps) and ends 8 s after full score
-  holds; a Dream-1 trial runs up to 3,600 steps (3 minutes simulated). Wall-clock time on one L40S, including Isaac Sim start-up: about 340 s for the demo and about 550 s for a full Dream-1 trial.
+  holds; a Dream-1 trial runs up to 3,600 steps (3 minutes simulated). Wall-clock time on one L40S, including Isaac Sim start-up: about 350 s for the demo and about 580 s for a full Dream-1 trial.
 - **Score:** `task_score` reports 1.0 when `success()` holds for 8 s (both holes bolted, the drift in its holder, all still),
   otherwise `score()` at the end of the run.
 
 ## Scoring
 
-At the end of the run (grippers opened). J is how far the plate has slid from its rest position; the spring sets
-J = 0 when nothing holds the plate.
+At the end of the run (grippers opened); the timed conditions are read from the video. J is how far the plate has slid from
+its rest position (ruler); the springs set J = 0 when nothing holds the plate. Gap is the drift's clearance to the edge of
+the flange's hole A plus its clearance to the opposite edge of the plate's hole (feeler gauge): about 0 when the taper is
+wedged between the two edges.
 
-- **Drift in hole A:** the drift's tip is below the plate's underside and within 2 cm of the hole A axis, and the drift is
-  tilted at most 15 degrees.
+- **Lined up:** the drift's tip went below the plate top in hole A while J was 0.3 cm or less, and the drift then stood in
+  hole A (tip below the plate's underside and within 2 cm of the hole A axis, tilted at most 15 degrees) with J of 1.4 cm
+  or more and a gap of 3 mm or less for 1 s. Before that, a plate with J over 0.3 cm and a gap over 3 mm for 0.25 s has
+  been moved by something other than the wedge, and the entry is void: the drift has to come out and go in again with the
+  plate back at rest.
 - **Bolt home:** the shank is through the flange (tip 5 mm or more below the flange's underside), the head's underside is
   within 4 mm of the plate top, the bolt is tilted at most 5 degrees, and its axis is within 1.2 cm of a hole axis.
 
 | Score | Outcome |
 |---|---|
-| 1.0 | both holes have a bolt home, the first put there while the drift was in a hole, and the drift stands in its holder (head's underside within 1 cm of the rim, tilted at most 10 degrees, centred within 1.5 cm); every part still |
-| 0.75 | both holes bolted in that order, drift not in its holder |
-| 0.5 | one bolt home, put there while the drift was in a hole |
-| 0.25 | at some time the drift stood in hole A with J of 1.4 cm or more for 1 s |
-| 0 | otherwise; a bolt home with no drift line made; any part off the table |
+| 1.0 | both holes have a bolt home and the drift stands in its holder (head's underside within 1 cm of the rim, tilted at most 10 degrees, centred within 1.5 cm); drift and bolts still |
+| 0.75 | both holes bolted, drift not in its holder |
+| 0.5 | lined up, then one bolt went home while the drift was in a hole |
+| 0.25 | lined up |
+| 0 | otherwise; a bolt home with no line made by the drift; any part off the table |
 
 The earlier steps are remembered over the run, so letting the plate spring back after the drift is pulled does not erase
 them. Doing nothing scores 0: at rest the strips (1.0 cm of hole A, 0.4 cm of hole B) are narrower than a bolt tip
 (1.3 cm), so a bolt alone cannot start. With the drift in hole A the strip of hole B is about 2.2 cm, enough for a 1.6 cm shank;
 once that bolt holds the plate, the strip of hole A is about 2.1 cm. Every part has to be lifted out of its holder
-to reach a hole, so pushing parts along the table scores 0. In simulation the grippers are not opened before the last
-step, so a bolt whose head is more than 4 mm above the plate, or a drift whose head is more than 1 cm above its rim, counts
-as not placed.
+to reach a hole, so pushing parts along the table scores 0.
+
+Moving the plate any other way scores 0 for the line and for everything after it:
+
+- **Plate pushed over first, drift dropped in after:** the tip enters with J over 0.3 cm, so there is no entry.
+- **Tip in, then the plate pushed along by a gripper:** the plate runs ahead of the taper, so J is over 0.3 cm with a gap
+  over 3 mm and the entry is void.
+- **Plate pried over with the drift as a lever:** the drift leaves the flange hole's edge, the gap opens the same way and
+  the entry is void.
+
+The 0.3 cm and 3 mm allowances cover a plate nudged by the tip on its way in and the fit of the taper; they are far
+below the 1.4 cm the line needs.
+
+In simulation the grippers are not opened before the last step, so a bolt whose head is more than 4 mm above the plate,
+or a drift whose head is more than 1 cm above its rim, counts as not placed.
 
 The arms' path is not scored by the simulation. In a real trial keep fingers off the plate edges and out of the holes
 while the plate is under spring load; handle the parts by their heads and tabs.
 
+## The plate, its guide and its springs
+
+The masses follow from the sizes: acetal (POM) is 1.41 g/cm3, so the drift (70.8 cm3) is 100 g, a bolt (52.7 cm3) is 75 g
+and the plate with its lug (315.6 cm3 after its two holes) is 445 g. The plate does not rest on the flange. Its lug is
+screwed to the block of a 9 mm miniature ball linear guide (MGN9 size) on a steel bar behind the flange, shimmed so the
+plate clears the flange by 0.3 mm; the guide lets it move along y only and carries the downward load of the drift. Two
+extension springs of 75 N/m (0.075 N/mm) each run along y from the ends of the lug to a post at each end of the bar. With
+the lug midway between the posts each spring is 9.5 cm long hook to hook and pulls 3.0 N (set by choosing springs about
+5.5 cm long, or by moving the hooks), so the two cancel at rest and together return the plate with 1.5 N per cm of
+slide: 2.9 N with the drift in (J 1.9 cm), 1.7 N resting on the first bolt (J 1.1 cm), 5.1 N at the far stop. Stop
+collars on the rail limit the slide to 0.3 cm toward -y and 3.4 cm toward +y of rest. A ball guide's drag is a few
+hundredths of a newton, so the plate returns to within a millimetre of rest. In simulation the guide and springs are one
+slide joint with the same rate and stops, and the springs are not drawn.
+
 ## Real-world reset
 
-Let the spring push the plate back to rest. Hang the drift and both bolts by their heads in their holders (collars
-6.5 cm tall with a 3.2 cm opening). Nothing is consumed or bent. The real build is two steel bars for the flange and
-plate, a die spring, a bought drift pin and two bolts.
+Let the springs bring the plate back to rest (J 0); a spring scale on each spring should read 3.0 N there. Hang the drift
+and both bolts by their heads in their holders (collars 6.5 cm tall with a 3.2 cm opening). Nothing is consumed or bent.
+The real build is steel bar for the flange, its legs, the guide bar and the collars; machined acetal for the plate, the
+drift and the two bolts; one MGN9 rail with a block; and two extension springs.

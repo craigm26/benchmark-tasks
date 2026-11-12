@@ -1,10 +1,15 @@
 """On the station table, between the arms: a grey steel flange plate on two dark legs, with two slotted holes (3.0 cm along x,
-3.6 cm along y) at y -8 cm (hole A) and +8 cm (hole B). A blue splice plate lies on it, held by a spring (150 N/m) that has
-slid it 2.9 cm out of line, so at rest only a 1.0 cm strip of hole A and a 0.4 cm strip of hole B show through the plate (its
-holes are also 0.6 cm closer together than the flange's, as after fit-up). An orange drift pin (a tapered tip, a shank and a
-head) and two yellow bolts (a head, an upright grip tab, a chamfered shank) each hang by their heads in a dark holder: the
-drift and one bolt in front of the right arm, the other bolt in front of the left arm. The plate and the three parts are
-loose; the flange and the holders are fixed.
+3.6 cm along y) at y -8 cm (hole A) and +8 cm (hole B). A blue acetal splice plate lies 0.3 mm over it, carried by a lug on
+its far edge that rides a ball linear guide on a bar behind the flange. Two opposed extension springs between the lug and
+two posts (75 N/m each, 150 N/m together, no net force at rest) hold the plate 2.9 cm out of line, so at rest only a 1.0 cm
+strip of hole A and a 0.4 cm strip of hole B show through the plate (its holes are also 0.6 cm closer together than the
+flange's, as after fit-up). An orange acetal drift pin (a tapered tip, a shank and a head) and two yellow acetal bolts (a
+head, an upright grip tab, a chamfered shank) each hang by their heads in a dark holder: the drift and one bolt in front of
+the right arm, the other bolt in front of the left arm. The plate slides; the three parts are loose; the flange, the guide
+bar and the holders are fixed.
+
+Masses follow from the sizes at acetal's 1.41 g/cm3: drift 70.8 cm3 = 100 g, bolt 52.7 cm3 = 75 g, plate with its lug
+315.6 cm3 = 445 g (470 g moving with the guide block).
 
 Requires -E object_jitter=0.
 """
@@ -46,6 +51,17 @@ REST = 0.029  # the plate rests this far (in -y) from where its holes sit over t
 J_MAX = 0.034
 J_LINE = 0.014  # the line is made when the plate is slid this far from rest, with the drift in hole A
 J_BOLT_B_MIN = 0.012  # a bolt cannot start in hole B below this slide
+J_ENTRY = 0.003  # the drift's tip has to go into hole A while the plate is within this of rest
+GAP_TOL = 0.003  # wedged: the drift's clearances to the flange hole's edge and to the plate hole's edge total this or less
+
+# The guide behind the flange (mech x 6 to 8 cm): a bar with a 9 mm ball rail on top and a spring post at each end. The plate's
+# lug is screwed to the rail's block. The two springs are the joint's spring and are not drawn.
+GUIDE_X = 0.07
+BAR_Z = 0.070
+RAIL_Z = 0.0065
+POST_Y = 0.12
+LUG = (0.03, 0.04)  # x by y, on the plate's far edge, centred on mech y 0 at rest
+PLATE_MASS = 0.47  # 445 g of acetal plate and lug, 25 g of guide block
 
 _hy2 = HY / 2
 FLANGE = Mech(
@@ -61,6 +77,10 @@ FLANGE = Mech(
         box((0.0, -(HOLE_Y + _hy2 + FL_HALF) / 2, (FL_Z0 + FL_Z1) / 2), (HX, FL_HALF - HOLE_Y - _hy2, FL_Z1 - FL_Z0), GREY),  # outside the holes
         box((0.0, 0.0, (FL_Z0 + FL_Z1) / 2), (HX, 2 * (HOLE_Y - _hy2), FL_Z1 - FL_Z0), GREY),  # between them
         box((0.0, (HOLE_Y + _hy2 + FL_HALF) / 2, (FL_Z0 + FL_Z1) / 2), (HX, FL_HALF - HOLE_Y - _hy2, FL_Z1 - FL_Z0), GREY),
+        box((GUIDE_X, 0.0, BAR_Z / 2), (0.02, 2 * FL_HALF, BAR_Z), DARK),  # guide bar against the flange's far edge
+        box((GUIDE_X, 0.0, BAR_Z + RAIL_Z / 2), (0.009, 0.21, RAIL_Z), GREY),  # rail
+        box((GUIDE_X, -POST_Y, BAR_Z + 0.0125), (0.01, 0.01, 0.025), DARK),  # spring posts
+        box((GUIDE_X, POST_Y, BAR_Z + 0.0125), (0.01, 0.01, 0.025), DARK),
     ],
     joints=[
         Joint(
@@ -71,8 +91,8 @@ FLANGE = Mech(
             low=-0.003,
             high=J_MAX,
             spring=150.0,
-            damping=5.0,
-            mass=0.12,
+            damping=10.0,
+            mass=PLATE_MASS,
             friction=0.3,
             shapes=[
                 box((-0.0325, 0.0, (PL_Z0 + PL_Z1) / 2), (0.035, 2 * PL_HALF_Y, PL_Z1 - PL_Z0), BLUE),
@@ -82,6 +102,8 @@ FLANGE = Mech(
                 box((0.0, 0.0, (PL_Z0 + PL_Z1) / 2), (HX, 2 * (PL_HOLE_Y - _hy2), PL_Z1 - PL_Z0), BLUE),
                 box((0.0, (PL_HALF_Y + PL_HOLE_Y + _hy2) / 2, (PL_Z0 + PL_Z1) / 2),
                     (HX, PL_HALF_Y - PL_HOLE_Y - _hy2, PL_Z1 - PL_Z0), BLUE),
+                box((0.05 + LUG[0] / 2, REST, (PL_Z0 + PL_Z1) / 2), (LUG[0], LUG[1], PL_Z1 - PL_Z0), BLUE),  # lug
+                box((GUIDE_X, REST, (BAR_Z + RAIL_Z + 0.0004 + PL_Z0) / 2), (0.02, LUG[1], PL_Z0 - BAR_Z - RAIL_Z - 0.0004), GREY),  # block
             ],
         )
     ],
@@ -163,7 +185,7 @@ def _bolt(name):
     return Mech(
         name,
         pos=(x, y, TOP + RIM + 0.0004),
-        mass=0.08,
+        mass=0.075,
         friction=1.0,
         shapes=[
             box((0, 0, BT_HEAD / 2), (0.040, 0.040, BT_HEAD), YELLOW),
@@ -191,11 +213,13 @@ DRIFT_TILT = 15.0
 STOW_XY, STOW_Z, STOW_TILT = 0.015, 0.010, 10.0
 OFF_TABLE = 0.02
 
-_S = {"line": 0, "line_ok": False, "held": False}
+AHEAD_STEPS = 5  # 0.25 s: the plate away from rest and not wedged on the drift for this long voids the entry
+
+_S = {"line": 0, "line_ok": False, "held": False, "entered": False, "ahead": 0, "seen": None, "out": (0.0, frozenset())}
 
 
 def _clear():
-    _S.update({"line": 0, "line_ok": False, "held": False})
+    _S.update({"line": 0, "line_ok": False, "held": False, "entered": False, "ahead": 0, "seen": None, "out": (0.0, frozenset())})
 
 
 @on_reset
@@ -230,6 +254,43 @@ def _drift_in(s, hole_y):
                 and abs(ax[1] - (FY + hole_y)) <= 0.02)
 
 
+def _tip_in_a(s):
+    """The drift's tip is below the plate top inside hole A (the only opening there), upright to 15 degrees."""
+    tip = _pt(s, (0, 0, -DR_LEN))
+    return bool(tilt_deg(s) <= DRIFT_TILT and tip[2] < PLATE_TOP and abs(tip[0] - FX) <= 0.02
+                and abs(tip[1] - (FY - HOLE_Y)) <= 0.02)
+
+
+def _drift_half_width(zl):
+    """Half the drift's width along its own y at height zl below the head's underside (zl <= 0)."""
+    if zl >= -DR_SHANK[2]:
+        return DR_SHANK[1] / 2
+    return DR_TIP_Y + (DR_SHANK[1] / 2 - DR_TIP_Y) * (zl + DR_LEN) / DR_TAPER
+
+
+def _face_reach(s, sign, z0, z1):
+    """How far the drift's sign-side face reaches along world y between world heights z0 and z1, or None if it is not there."""
+    ys = []
+    for zl in np.linspace(-DR_LEN, 0.0, 61):
+        p = _pt(s, (0.0, sign * _drift_half_width(float(zl)), float(zl)))
+        if z0 <= p[2] <= z1:
+            ys.append(float(p[1]))
+    if not ys:
+        return None
+    return max(ys) if sign > 0 else min(ys)
+
+
+def wedge_gap(s, j):
+    """The drift's clearance (m) to the -y edge of flange hole A plus its clearance to the +y edge of the plate's hole A at slide
+    j: what a feeler gauge would find on the two sides. About 0 when the taper is wedged between the two edges; large when the
+    plate has been moved further than the drift accounts for, or the drift is not down between the edges."""
+    lo = _face_reach(s, -1, TOP + FL_Z0, TOP + FL_Z1)
+    hi = _face_reach(s, 1, TOP + PL_Z0, TOP + PL_Z1)
+    if lo is None or hi is None:
+        return math.inf
+    return (lo - (FY - HOLE_Y - _hy2)) + ((FY - PL_HOLE_Y + _hy2 - REST + j) - hi)
+
+
 def _stowed(s):
     hx, hy = HOLDERS["drift"]
     return bool(tilt_deg(s) <= STOW_TILT and abs(s.origin[0] - hx) <= STOW_XY and abs(s.origin[1] - hy) <= STOW_XY
@@ -241,24 +302,42 @@ def _off_table(s):
 
 
 def _levels(objects):
+    if objects is _S["seen"]:  # success() and score() both read the same step: count it once
+        return _S["out"]
     f, d, ba, bb = objects["flange"], objects["drift"], objects["bolt_a"], objects["bolt_b"]
     j = float(f.joints["plate"])
     in_a = _drift_in(d, -HOLE_Y)
-    made = in_a and j >= J_LINE
+    gap = wedge_gap(d, j)
+    # The drift goes in first: its tip has to pass the plate top in hole A while the plate is still at rest. From then until
+    # the line is made, a plate that is away from rest without being wedged on the drift (pushed by a gripper, or pried
+    # with the drift as a lever) voids the entry; the drift has to come out and go in again with the plate back at rest.
+    if not _tip_in_a(d):
+        _S["entered"], _S["ahead"] = False, 0
+    elif not _S["entered"]:
+        if j <= J_ENTRY and _S["ahead"] < AHEAD_STEPS:
+            _S["entered"] = True
+    elif not _S["line_ok"]:
+        _S["ahead"] = _S["ahead"] + 1 if (j > J_ENTRY and gap > GAP_TOL) else 0
+        if _S["ahead"] >= AHEAD_STEPS:
+            _S["entered"] = False
+    made = _S["entered"] and in_a and j >= J_LINE and gap <= GAP_TOL
     _S["line"] = _S["line"] + 1 if made else 0
     if _S["line"] >= HOLD_STEPS:
         _S["line_ok"] = True
     holes = {h for h in (_bolt_hole(ba), _bolt_hole(bb)) if h}
-    if holes and (in_a or _drift_in(d, HOLE_Y)):
+    if holes and _S["line_ok"] and (in_a or _drift_in(d, HOLE_Y)):
         _S["held"] = True
+    _S["seen"], _S["out"] = objects, (j, holes)
     return j, holes
 
 
 def score(objects):
-    """Flags are kept over the run. 0.25: the drift stood in hole A with the plate slid 1.4 cm or more for 1 s. 0.5: also a bolt is
-    home (shank through the flange, head flat on the plate within 4 mm and 5 degrees, axis within 1.2 cm of a hole) and was put there while the
-    drift was still in a hole. 0.75: both holes bolted. 1.0: also the drift stands in its holder (head on the rim) and all are still. Bolts or the
-    drift off the table: 0. A bolt home with no drift line made scores 0."""
+    """Flags are kept over the run. 0.25: the drift's tip went into hole A while the plate was within 0.3 cm of rest, and the drift
+    then stood in hole A, wedged (clearances to the two hole edges 3 mm or less in total), with the plate slid 1.4 cm or more for
+    1 s. A plate moved by anything but the drift's wedge voids the entry. 0.5: also a bolt is home (shank through the flange,
+    head flat on the plate within 4 mm and 5 degrees, axis within 1.2 cm of a hole) and was put there after the line was made, while
+    the drift was still in a hole. 0.75: both holes bolted. 1.0: also the drift stands in its holder (head on the rim) and the
+    drift and bolts are still. Bolts or the drift off the table: 0. A bolt home with no drift line made scores 0."""
     d, ba, bb = objects["drift"], objects["bolt_a"], objects["bolt_b"]
     j, holes = _levels(objects)
     if _off_table(d) or _off_table(ba) or _off_table(bb):
@@ -293,7 +372,8 @@ BOLT_GRIP_Z = TOP + RIM + BT_HEAD + 0.015
 DRIFT_SEATED_Z = PLATE_TOP + 0.020
 BOLT_SEATED_Z = PLATE_TOP + BT_HEAD + 0.015 + 0.0
 DRIFT_LIFT_Z = TOP + 0.185
-TIP_AIM_Y = -HOLE_Y - _hy2 + overlap_a(0.0) / 2  # centre of the strip of hole A that shows at rest
+WALL_A = -HOLE_Y - _hy2  # the -y edge of flange hole A, which the drift bears on
+TIP_AIM_Y = WALL_A + DR_TIP_Y + 0.002  # the tip goes down 2 mm off that edge, inside the 1.0 cm strip that shows at rest
 _PRESS = 0.002
 
 
@@ -324,6 +404,24 @@ def _aim(arm, goal_xy, d, z0, z1, dur, finger, stop=None, gain=0.3, clamp=0.03):
     arm._c = c
 
 
+def _steer(arm, err, z0, z1, dur, finger, stop=None, gain=0.3, clamp=0.012, dead=0.0003):
+    """Move from height z0 to z1 over dur seconds while closed-loop trimming the TCP's xy until err() (goal minus what is
+    measured on the held part, metres in x and y) is inside the dead band. stop() ends the move early."""
+    steps = max(1, round(dur / arm.dt))
+    rot = arm.rot.copy()
+    xy0 = np.asarray(arm.pos[:2], float).copy()
+    c = np.zeros(2)
+    for i in range(1, steps + 1):
+        e = np.asarray(err(), float)
+        e[np.abs(e) < dead] = 0.0
+        c = np.clip(c + gain * e, -clamp, clamp)
+        z = z0 + (z1 - z0) * i / steps
+        arm._set_cartesian(np.array([xy0[0] + c[0], xy0[1] + c[1], z]), rot, finger)
+        yield
+        if stop is not None and stop():
+            break
+
+
 def _grab(ctx, arm, name, grip_z, travel_z, open_f, shut_f):
     """Hover over the part, steer onto its origin, lower beside it, close, lift straight up. Returns the part's xy offset from
     the TCP while it hangs in the grip."""
@@ -344,16 +442,22 @@ def demo_script(ctx):
     hx, hy = HOLDERS["drift"]
     hover = TOP + 0.185
 
-    # 1. right: take the drift, carry it over the strip of hole A that shows, lower it so the taper cams the plate
+    # 1. right: take the drift and hold its tip over the strip of hole A that shows, 2 mm off the flange hole's edge. Lower it
+    # straight down: the tip goes in with the plate still at rest, then one face of the taper rides the flange hole's edge
+    # and the other pushes the plate, so the plate moves only as far as the taper has gone in. The fingers stay on the head.
     d = yield from _grab(ctx, right, "drift", DRIFT_GRIP_Z, DRIFT_LIFT_Z, DRIFT_OPEN, C)
     yield from right.move((FX - d[0], TIP_AIM_Y - d[1], DRIFT_LIFT_Z), 2.5, C)
-    right._c = np.zeros(2)
-    aim = lambda: (FX, TIP_AIM_Y)  # noqa: E731
-    yield from _aim(right, aim, d, DRIFT_LIFT_Z, DRIFT_LIFT_Z, 1.2, C)
-    # tip 1 cm over the plate -> 4 cm of taper (5 s) -> shank down to the head on the plate; the flange wall centres it
-    z_cam_end = DRIFT_LIFT_Z - 0.050
-    yield from _aim(right, aim, d, DRIFT_LIFT_Z, z_cam_end, 5.0, C)
-    yield from _aim(right, (FX, -HOLE_Y - 0.002), d, z_cam_end, DRIFT_SEATED_Z - _PRESS, 2.5, C)
+
+    def cam_err():
+        s = ctx.obj("drift")
+        tip = _pt(s, (0.0, 0.0, -DR_LEN))
+        face = _face_reach(s, -1, TOP + FL_Z0, TOP + FL_Z1)  # where the taper's -y face is, level with the flange hole's edge
+        ey = (TIP_AIM_Y - tip[1]) if face is None else (FY + WALL_A + 0.0003 - face)
+        return (FX - tip[0], ey)
+
+    yield from _steer(right, cam_err, DRIFT_LIFT_Z, DRIFT_LIFT_Z, 1.5, C)
+    down = lambda: _tip_in_a(ctx.obj("drift")) and float(ctx.obj("drift").origin[2]) <= PLATE_TOP + 0.0015  # noqa: E731
+    yield from _steer(right, cam_err, DRIFT_LIFT_Z, DRIFT_SEATED_Z - _PRESS, 8.0, C, stop=down)
     yield from right.hold(0.8)
     drift_c = right.pos.copy()
 
@@ -373,7 +477,7 @@ def demo_script(ctx):
     yield from left.move((0.20, 0.20, TOP + 0.20), 2.0, FINGER_OPEN)
 
     # 3. right: pull the drift straight up, stand it in its holder
-    yield from right.move((drift_c[0], drift_c[1], drift_c[2] + 0.07), 3.0, C)
+    yield from right.move((drift_c[0], drift_c[1], DRIFT_LIFT_Z), 3.0, C)
     right._c = np.zeros(2)
     hold_xy = lambda: (hx, hy)  # noqa: E731
     yield from right.move((hx - d[0], hy - d[1], DRIFT_LIFT_Z), 3.0, C)
