@@ -1,0 +1,22 @@
+{
+  "title": "Snap a heat sink onto a processor carrier in its tray, pin 1 marks matched, until all four corner clips catch",
+  "category": "Impact on AI timelines",
+  "keywords": [
+    "server hardware",
+    "processor heat sink module",
+    "snap fit",
+    "pin 1 orientation",
+    "bimanual press",
+    "data center"
+  ],
+  "instruction": "Fit the heat sink onto the processor carrier in the tray, gold triangles together, and press till all four clips catch.",
+  "context": "Server technicians build this module on every processor install or swap. Manuals (Lenovo \"Install a processor and heat sink\", Dell \"Installing the processor\"): heat sink onto the carrier in its tray, pin 1 matched, pressed until four corner clips lock. Unlike the board's socket lever and snap lid: a 0.45 kg part turned to a mark on a loose carrier.",
+  "setup": "Centres in cm from the midpoint between the arm bases, x forward, y left. Tray: blue-grey plastic processor shipping tray, fixed, 14.7 (x) x 10.0 (y) x 2.4 cm at x 27.5, y -3.0; pocket 12.7 x 7.0 cm, rim 0.6 cm tall; gold 12 mm triangle on the rim's near left corner. Processor in its carrier, loose in the pocket, 0.13 kg, long side along x: black plastic frame 10.9 x 6.4 x 0.7 cm, green substrate 7.75 x 5.65 cm, silver lid 6.4 x 5.0 cm top 0.9 cm above the pocket floor, gold 14 mm triangle on the substrate's near left corner (pin 1); 0.3 to 0.4 cm of play a side. Four dark plastic clips at the frame's ends, 2.4 cm either side of centre: arms 1.2 x 0.5 x 2.0 cm, 20 g, hinged at the foot, sprung shut (0.45 N m/rad); nose 3.5 mm inward (3.0 mm over the heat sink base), catch face 1.6 cm above the floor, 55 degree ramp on top. Stand: dark grey block 9 x 12 x 3 cm, fixed, at x 27.5, y 13.5. Heat sink, 0.45 kg, on the stand, long side along y: copper base 10.8 x 7.8 x 0.6 cm; aluminium fin stack 9.2 x 7.8 x 1.9 cm, notched 1.4 x 0.9 cm at each corner round a steel captive nut 0.9 cm across, 2.7 cm tall overall; white label, gold 20 mm triangle at the pin 1 corner, far left. It needs a quarter turn counterclockwise to match.",
+  "scoring": "Measured after the run with both grippers at least 3 cm from heat sink and carrier and all still for 1 s (photos, a ruler). Matched: heat sink within 5 degrees of the carrier's direction, gold triangles at the same corner. Caught, per clip: clip upright on its stop (within 0.05 rad), nose over the copper base, base underside there within 1 mm of the processor lid. If matched: 0.25 per clip caught; 1.0 needs all four and the heat sink flat on the lid within 1.5 degrees, else 0.75. 0 if not matched or reversed; no clip caught (on the stand, resting on the clip ramps about 12 mm above the lid, held up, off the carrier); a gripper still on a part; or if at any time a clip caught a reversed heat sink, the carrier was lifted 5 mm off the pocket floor or tilted 10 degrees, or the heat sink was let go more than 15 mm above the lid or tilted over 15 degrees.",
+  "run_limit": "3,600 steps (3 minutes at 20 Hz)",
+  "reset_notes": "Open the four clips by hand, lift the heat sink off and put it back on the stand with its triangle at the far left; centre the carrier in the pocket. Check the clips for wear every few trials.",
+  "fidelity": "Approximate. Real sizes and masses. Clips are rigid arms on sprung hinges with a stop, standing in for moulded flexing clips; carrier and processor are one body. The fins are drawn; the fin stack collides as one notched block. Uniform density puts the heat sink's centre of mass higher than a copper-based part. No thermal paste, no force limit on the lid. The sim scores without opening the grippers, so a part still held or in the air scores 0.",
+  "scores": "Dream-1 run: no score (the model's first action was rejected before the robot moved, see no_model_video_reason); demo: 1.0 (lifted heat sink, turned it, pressed it onto carrier with both arms, backed away)",
+  "no_model_video_reason": "Dream-1 was run through Inspect Robots on this task and its first action was rejected by the policy adapter before the robot moved, so there is no recording: \"PolicyError: q_r_chunk gripper leaves 0..1: [-0.113, 0.938]\" (3 attempts on 2026-11-14, every attempt with this error).",
+  "media": "M-BM9ZHH"
+}
