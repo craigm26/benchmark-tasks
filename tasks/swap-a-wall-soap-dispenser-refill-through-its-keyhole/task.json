@@ -1,0 +1,21 @@
+{
+  "title": "Swap a wall soap dispenser's refill: drop its pump through the keyhole, slide it into the yoke, test-push",
+  "category": "Impact on jobs",
+  "keywords": [
+    "restroom restocking",
+    "hidden insertion",
+    "keyhole slot",
+    "push-bar dispenser",
+    "functional test",
+    "bimanual"
+  ],
+  "instruction": "Swap the empty soap refill for the new one, put the empty in the bin, shut the cover and test it with one push.",
+  "context": "Janitors and cleaners (O*NET 37-2011.00, 2.2M US workers) and maids and housekeeping cleaners (37-2012.00, 0.9M) refill restroom soap dispensers on every round (\"Service, clean, or supply restrooms\"). The pump goes through a keyhole hidden under the bottle and must sit over the push bar's fork, so the round ends with one test push.",
+  "setup": "Positions in cm: x forward from the midpoint between the arm bases, y left, heights above the table. Push-bar wall soap dispenser, white ABS, 125 x 148 x 271 mm, centred on y 0, screwed to a pale blue plywood board (40 x 36 x 1.8 cm, face at x 40.5) at table height (110 to 120 cm on a wall). Back plate x 39.7 to 40.5; side walls x 26.2 to 39.7, 5 to 15 cm up. Dark grey ledge, top 15.0 cm up, with a keyhole: 44 x 44 mm entrance centred at x 31.0, 34 mm slot back to x 36.7. Cover, 5 mm ABS, 0.26 kg, hinged at x 26.2, 9 cm up: face 125 x 226 mm, top plate 143 mm deep. It starts open 60 degrees on its stop (the key is not tested); a detent spring (0.35 N m/rad) shuts it once within 30 degrees of shut. Push lever, grey ABS, 80 g, pivot x 29.0, 12.55 cm up, travel 0.12 rad, spring 0.3 N m/rad: dark bar 110 x 30 x 12 mm (front x 25.2, 5 to 8 cm up), fork plate with a 24 mm U slot and two 3 mm contact ridges (top 12.3 cm up), counterweight. Two 600 mL HDPE refills, 188 mm tall, pump down: bottle 76 (x) x 64 (y) x 150 mm, 28 mm neck, 22 mm pump, 38 mm collar 4 mm thick stroking 10 mm against 250 N/m, 10 mm nozzle. Spent, grey, 0.12 kg: seated, neck axis x 35.3, y 0, collar 1 mm over the ridges. New, white with a blue band, 0.66 kg: on a blue cradle (two ABS rails 100 x 27 x 50 mm, 46 mm apart) at x 22.0, y -19.0. Waste bin, dark grey plastic, fixed, inside 18 x 18 cm, 15 cm tall, at x 22.0, y 17.0.",
+  "scoring": "S, N, L at the end; P and D latch over the run. S: spent refill's centre inside the bin's inner 18 x 18 cm footprint, lowest point 1 cm or more below the rim. N: new refill's neck axis within 4 mm of the slot-end seat (x 35.3, y 0), base within 2 mm of the ledge top, tilt 5 deg or less. L: cover within 2 deg of shut. P: after N and L have held 1 s, the lever turns 0.08 rad or more and the pump collar strokes 5 mm or more. D: new refill drops 5 cm or more within 0.5 s while released, or tilts past 45 deg. End: both refills at rest (under 1 cm/s for 1 s) and both grippers 3 cm clear of them, else 0. 1.0: S, N, L, P. 0.75: S, N, L. 0.5: S, N. 0.25: S alone, or N without S. D caps the score at 0.25. Else 0. Real trial: N by ruler (bottle's back face 6 mm from the back plate, within 4 mm; base on the ledge); P when one push moves the collar 5 mm or soap appears.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Slide the new refill forward to the entrance, lift it out and stand it on the cradle. Open the cover with its key and let it hang on its 60 degree stop. Seat the spent refill at the slot end. Empty the bin; with real soap, wipe the nozzle.",
+  "fidelity": "Real size, rigid parts. The 600 mL of soap is a solid fill (no slosh or flow); the pump is a collar on a 250 N/m spring with 10 mm travel, softer than a real pump. The cover catch is a detent spring on its hinge (0.35 N m/rad, flips 30 deg from shut); the key is not modelled. The ledge is flat strips with a square-ended slot. The sim scores without opening the grippers, so a refill still held, or within 3 cm of a finger, scores 0.",
+  "scores": "Dream-1 run: 0.0 (Right arm carried the new refill to the dispenser, spent refill and cover untouched); demo: 1.0 (Moved spent refill to bin, seated new refill, shut cover, pushed, backed off)",
+  "media": "M-ZN2PDZ"
+}
