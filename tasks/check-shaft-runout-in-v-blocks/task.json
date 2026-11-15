@@ -1,0 +1,21 @@
+{
+  "title": "Turn a shaft one full turn in V-blocks under a dial indicator to read its runout, keeping it seated",
+  "category": "Impact on jobs",
+  "keywords": [
+    "inspection",
+    "runout",
+    "dial indicator",
+    "V-blocks",
+    "regrasp",
+    "in-place rotation"
+  ],
+  "instruction": "Turn the shaft one full turn in its V-blocks under the dial indicator, keeping it down in both Vs and against the end stop, then let go.",
+  "context": "Inspectors, testers and sorters (O*NET 51-9061, about 600,000 US workers) and machinists (51-4041) measure parts with gauges to verify they meet spec. Runout is checked by turning a shaft a full turn in V-blocks under a dial indicator in max/min hold. Lift it 0.1 mm or jolt it at a regrasp and the dial records false runout.",
+  "setup": "Positions in cm from the midpoint between the arm bases, x forward, y left; heights above the table. Steel bench stand 26 x 26 x 5.4, centre x 28, y 5.5. On it a black granite surface plate 30 x 30 x 5 (x 13 to 43, y -9.5 to 20.5, top at 10.4). On the plate, two light grey hardened steel V-blocks, 5 wide, 5 tall, 4 long, 90 degree V 3.6 wide and 1.8 deep, centred x 28, y -5 and y 4. In the Vs a loose ground steel shaft, 20 mm diameter, 200 mm long, 0.54 kg, along y from -12 to 8, axis at x 28, height 15.0; between the blocks (y -2.5 to 1.5) a darker 24 mm journal turned 0.25 mm off centre (0.50 mm TIR), offset level toward +x at the start; red stripes top and bottom at y 6.1 to 7.9 and a red bar on the near end face, pointing up. Steel end stop 3 x 2 x 7 on the plate at x 28, y 8.05 to 10.05, 0.5 mm from the shaft's far end. Dial indicator: dark magnetic base 5 x 6 x 5.5 on the plate at x 38.5, y -0.5; 16 mm chrome post to height 25.4; 12 mm arm at height 23.4; 58 mm dial, 25 mm thick, white face toward the robot, centre x 28, y -0.5, height 24.8; its plunger, 8 mm flat contact point, rests on top of the journal at 0.65 N with 10 mm of travel. Left arm idle.",
+  "scoring": "Measured every step. Rest height: the shaft axis height at each V-block, averaged over the first second. Counted turn: net rotation about the shaft axis over steps with the axis no more than 0.10 mm above rest at both Vs, end gap 2 mm or less, plunger on the journal. Reading: plunger highest minus lowest over the run, as an indicator in max/min hold shows. Score 0 if ever the axis is 0.5 mm above rest at either V, the end gap passes 5 mm, or a finger comes within 10 mm of the plunger or dial. Score 0 unless at the end both grippers are 3 cm clear of the shaft and it has lain still 1 s, seated, end gap 2 mm or less. Then 1.0: counted turn 360 deg or more, reading 0.35 to 0.65 mm (true 0.50). 0.5: 180 deg or more. 0.25: 90 deg or more. Else 0. Real trial: max/min-hold indicators on the journal and over each V, filmed end mark, feeler gauge.",
+  "run_limit": "3,600 steps (3 minutes at 20 Hz)",
+  "reset_notes": "Seat the shaft in both Vs with the end-face bar pointing up and its far end 0.5 mm from the stop (feeler gauge). Check the plunger rides the journal, then clear the indicator's max/min hold. Verify the journal's 0.50 mm TIR between centres before trials.",
+  "fidelity": "Full size, steel masses. The plunger is a real slide riding the journal; its 0.65 N gauge force is its own 66 g weight, not a spring, with 2 N s/m damping. The dial face, pointer and ticks are drawn, not geared: the reading is the plunger travel. Contacts are rigid; steel friction 0.2. The sim scores the last step without opening the grippers, so a shaft still gripped or lifted scores 0, as it would once released.",
+  "scores": "Dream-1 run: 0.0 (Both arms drifted back and forth near the plate, shaft never turned); demo: 1.0 (Right arm regrasped and turned the shaft in steps, then withdrew clear)",
+  "media": "M-85C93T"
+}
