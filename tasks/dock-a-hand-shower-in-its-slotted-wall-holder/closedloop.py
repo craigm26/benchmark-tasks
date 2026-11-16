@@ -42,6 +42,15 @@ reads: ``arm.measured_pos`` / ``measured_rot`` (encoder forward kinematics), ``a
 ``ctx.images`` (both None offline). ``ctx.look(name)`` is a one-time rounded pose read that the task must declare in
 ``DEMO_LOOKS``. ``kit/observable_lint.py`` reports state reads statically (advisory).
 
+Contact (needs mechkit beside the task, with ``watch_fingers()`` or ``watch_touch(...)`` declared at import):
+``arm.finger_force()`` is the net normal force (N) on that arm's finger links from anything, a fingertip contact
+sense on the robot itself, so it is not a state read and works in strict mode; ``arm.press_until(..., force_n=0.5)``
+also stops when it reaches ``force_n``. ``ctx.touch_state("hot_plate", arm="right")`` asks whether that arm's pads
+touched a named object (a ``ContactReading``); naming the object is simulator knowledge, so it counts as a state read
+and raises in strict mode. Offline nothing is felt in dry_run's first pass (0 N, untouched) and everything is in its
+pessimistic pass (PESSIMISTIC_TOUCH_N), unless the task defines ``DEMO_CONTACT_MOCK(side, target, step, pessimistic)``
+returning the force (N) to report; target is None for the net finger force.
+
 Importing this module hooks ``yam_arena.inspect_embodiment`` and ``yam_arena.scripted`` when they load, so the standard
 ``inspect-robots run --embodiment yam_arena --policy yam_scripted`` command runs ``demo_script(ctx)`` closed-loop at the
 embodiment's control rate. ``dry_run(task_path)`` steps the generator offline in pure NumPy at 20 Hz (the rate the runs
@@ -78,6 +87,7 @@ __all__ = [
     "DEMO_HZ",
     "ArmController",
     "ClosedLoopContext",
+    "ContactReading",
     "LookPose",
     "ObservabilityError",
     "PressResult",
@@ -121,6 +131,22 @@ class PressResult(NamedTuple):
     depth: float
     stopped_by: str  # "contact" or "max_depth"
     peak_lag_mm: float
+
+
+class ContactReading(NamedTuple):
+    """A contact read for the demo: ``touched`` this episode (or, for the net finger force, at this reading),
+    ``touching`` now, ``peak`` and ``now`` normal force (N), and ``source`` ("physx", "proximity", "offline")."""
+
+    touched: bool
+    touching: bool
+    peak: float
+    now: float
+    source: str
+
+
+# Offline, dry_run's pessimistic pass feels this force (N) on every contact read, so contact branches run.
+PESSIMISTIC_TOUCH_N = 5.0
+TOUCH_MIN_N = 0.05  # N: a net finger force at least this counts as touching (mechkit.TOUCH_MIN_FORCE)
 
 
 class LookPose(NamedTuple):
@@ -197,6 +223,8 @@ class ArmController:
         self.pessimistic = False
         self._missed_once = False
         self.press_log: list[PressResult] = []
+        # Set by the context: reads a ContactReading for (target or None); None outside a context.
+        self._contact: Callable[[str | None], ContactReading] | None = None
 
     def update_measured(self, q7: np.ndarray) -> None:
         """Update joint-encoder FK telemetry from the live 7-D arm state."""
@@ -237,6 +265,15 @@ class ArmController:
             return False
         return True if self.offline else self.gap() >= float(min_gap)
 
+    def finger_force(self) -> float:
+        """Net normal contact force (N) on this arm's finger links from anything they touch, the larger finger's, at
+        the latest physics reading: a fingertip contact sense on the robot (not a state read). Needs mechkit's
+        watch_fingers() or a watch_touch() declared in the task. Offline: 0 N in dry_run's first pass,
+        PESSIMISTIC_TOUCH_N in its pessimistic pass, or what DEMO_CONTACT_MOCK returns. nan when the simulator could not build the view."""
+        if self._contact is None:
+            raise RuntimeError("finger_force: this arm is not attached to a ClosedLoopContext")
+        return float(self._contact(None).now)
+
     def press_until(
         self,
         target: tuple[float, float, float] | np.ndarray,
@@ -250,6 +287,7 @@ class ArmController:
         settle: float = 0.3,
         hold: float = 0.3,
         rot: Any = None,
+        force_n: float | None = None,
     ) -> Generator[None, None, PressResult]:
         """Press from ``target`` (the start point just short of contact, from task constants) along ``direction`` at
         ``speed`` (m/s) until the lag along ``direction`` rises ``err_mm`` above its value at the start for
@@ -259,6 +297,9 @@ class ArmController:
         Usage: ``res = yield from arm.press_until(start, max_depth=0.016, err_mm=4.0, min_depth=0.010)``.
         Set max_depth a few mm past the seated depth: dry_run's first pass never feels contact, so it runs to max_depth;
         its pessimistic pass feels contact at min_depth.
+
+        ``force_n`` (N): also stop, once past ``min_depth``, when ``finger_force()`` reaches it for ``confirm_steps``
+        steps (a fingertip touch rather than command lag; needs mechkit's watch_fingers()).
         """
         max_depth = float(max_depth)
         min_depth = float(min_depth)
@@ -286,7 +327,8 @@ class ArmController:
             if self.offline and self.pessimistic and depth >= min_depth:
                 why = "contact"
                 break
-            if not self.offline and depth >= min_depth and lag >= float(err_mm):
+            felt = force_n is not None and self.finger_force() >= float(force_n)
+            if (not self.offline or felt) and depth >= min_depth and (lag >= float(err_mm) or felt):
                 streak += 1
                 if streak >= confirm_steps:
                     why = "contact"
@@ -456,6 +498,8 @@ class ClosedLoopContext:
         offline: bool = False,
         looks: Mapping[str, str] | None = None,
         pessimistic: bool = False,
+        contact_reader: Callable[[str, str | None], ContactReading] | None = None,
+        contact_mock: Callable[[str, str | None, int, bool], float] | None = None,
     ) -> None:
         self.dt = float(dt)
         self.left = ArmController("left", bases["left"], self.dt)
@@ -470,10 +514,52 @@ class ClosedLoopContext:
         self._looks = dict(looks or {})
         self.looks_taken: list[tuple[str, int]] = []
         self.press_log: list[PressResult] = []
+        self.pessimistic = self.offline and bool(pessimistic)
+        self.contact_reads = 0
+        self._contact_reader = contact_reader
+        self._contact_mock = contact_mock
         for arm in (self.left, self.right):
             arm.offline = self.offline
-            arm.pessimistic = self.offline and bool(pessimistic)
+            arm.pessimistic = self.pessimistic
             arm.press_log = self.press_log
+            arm._contact = (lambda target, side=arm.side: self._read_contact(side, target))
+
+    def _read_contact(self, side: str, target: str | None) -> ContactReading:
+        """One contact read for ``side`` (target None: the net finger force). Live through the context's reader;
+        offline from DEMO_CONTACT_MOCK or the pass (0 N first, PESSIMISTIC_TOUCH_N pessimistic), after checking that
+        mechkit declares the watch, so a dry run fails where the live run would."""
+        self.contact_reads += 1
+        if not self.offline:
+            if self._contact_reader is None:
+                raise RuntimeError("contact read: no contact reader in this context")
+            return self._contact_reader(side, target)
+        mk = sys.modules.get("mechkit")
+        if mk is None or not getattr(mk, "contacts_wanted", lambda: False)():
+            raise ValueError("a contact read needs mechkit beside the task with watch_fingers() or watch_touch(...) "
+                             "declared at import")
+        if target is not None and target not in getattr(mk, "_TOUCHES", {}):
+            raise ValueError(f"ctx.touch_state({target!r}): declare it with mechkit.watch_touch({target!r}) at import")
+        if self._contact_mock is not None:
+            f = float(self._contact_mock(side, target, self.step_count, self.pessimistic))
+        else:
+            f = PESSIMISTIC_TOUCH_N if self.pessimistic else 0.0
+        hit = f >= TOUCH_MIN_N
+        return ContactReading(hit, hit, f, f, "offline")
+
+    def touch_state(self, target: str, arm: str | None = None) -> ContactReading:
+        """Whether ``arm``'s finger pads (both arms when None) touched object watch ``target`` this episode, with the
+        peak and latest normal force: mechkit's touch_state for a watch declared with watch_touch(target). Naming
+        the object is simulator knowledge, so this counts as a state read and raises in strict mode; a demo that only
+        needs to feel a touch uses ``arm.finger_force()``."""
+        self._guard(f"ctx.touch_state({target!r})")
+        if arm is not None and arm not in ARMS:
+            raise ValueError(f"touch_state: arm must be one of {ARMS} or None, got {arm!r}")
+        sides = ARMS if arm is None else (arm,)
+        if not self.offline:
+            return self._read_contact(arm, target) if arm is not None else self._read_contact("both", target)
+        reads = [self._read_contact(s, target) for s in sides]
+        return ContactReading(any(r.touched for r in reads), any(r.touching for r in reads),
+                              max(r.peak for r in reads), max(r.now for r in reads), "offline")
 
     @property
     def privileged(self) -> bool:
@@ -579,6 +665,11 @@ def _mock_initial_states(task: task_file.TaskFile) -> dict[str, ObjectState]:
             from mechkit import MechState, _local_corners, _quat_xyzw_matrix  # local import only when Mech is used
 
             joints = {j.name: 0.0 for j in spec.joints}
+            import mechkit as _mk
+
+            links = getattr(_mk, "_gear_links", lambda s: ())(spec)
+            if links:  # a geared follower with an offset starts at its law, as mechkit's reset puts it
+                joints.update(_mk._gear_rest(spec, links))
             c = _local_corners(spec, joints) @ _quat_xyzw_matrix(quat).T + pos
             low, high = c.min(0), c.max(0)
             out[spec.name] = MechState(
@@ -637,6 +728,7 @@ def dry_run(
         ctx = ClosedLoopContext(
             bases, dt, lambda: mock, privileged=privileged, offline=True,
             looks=getattr(t.module, "DEMO_LOOKS", None), pessimistic=pessimistic,
+            contact_mock=getattr(t.module, "DEMO_CONTACT_MOCK", None),
         )
         traj: list[tuple[np.ndarray, np.ndarray]] = []
         steps = 0
@@ -671,6 +763,7 @@ def dry_run(
         "state_reads": ctx.state_reads,
         "looks": list(ctx.looks_taken),
         "presses": [p._asdict() for p in ctx.press_log],
+        "contact_reads": ctx.contact_reads,
         "trajectory": traj,
         "pessimistic": pess,
     }
@@ -719,6 +812,20 @@ def _print_states(ctx: ClosedLoopContext) -> None:
             print(f"CLARM {side} unavailable: {e}", flush=True)
 
 
+def _live_contact(side: str, target: str | None) -> ContactReading:
+    """A live contact read through mechkit (the task imports it as ``mechkit``): the net finger force of ``side``, or
+    watch ``target`` on ``side``'s pads ("both" for either arm)."""
+    mk = sys.modules.get("mechkit")
+    if mk is None or not hasattr(mk, "touch_state"):
+        raise RuntimeError("contact read: needs mechkit (with contact watches) beside the task")
+    if target is None:
+        f = float(mk.finger_force(side))
+        hit = f >= TOUCH_MIN_N
+        return ContactReading(hit, hit, f, f, "physx")
+    st = mk.touch_state(target, arm=None if side == "both" else side)
+    return ContactReading(bool(st.touched), bool(st.touching), float(st.peak), float(st.now), str(st.source))
+
+
 def _patch_scripted(mod: Any) -> None:
     cls = mod.YamScriptedPolicy
     if getattr(cls, "_closedloop_patched", False):
@@ -750,7 +857,7 @@ def _patch_scripted(mod: Any) -> None:
             # scripted demo to read simulator state).
             self._cl_ctx = ClosedLoopContext(
                 self._bases, self._dt, reader, strict=bool(getattr(module, "DEMO_STRICT", False)), offline=False,
-                looks=getattr(module, "DEMO_LOOKS", None),
+                looks=getattr(module, "DEMO_LOOKS", None), contact_reader=_live_contact,
             )
             self._cl_gen = fn(self._cl_ctx)
             return

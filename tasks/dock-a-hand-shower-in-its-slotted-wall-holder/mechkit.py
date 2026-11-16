@@ -64,6 +64,20 @@ Indicator lamps: ``lamp("status", at, radius, {"red": RED, "green": GREEN})`` gi
 hook calls ``set_lamp(MECH, "status", "red")`` to show one colour, and ``timetable`` / ``blink_code`` give blink codes.
 Offline set_lamp only records the state; ``MechState.lamps`` reports it to score() (GEOMETRY.md, "Indicator lamps").
 
+Gears: ``Joint("needle", ..., follows=Gear("knob", 0.4))`` (or ``follows=("knob", 0.4)``) drives the needle at 0.4 x
+the knob's angle, a rack from a pinion (m/rad) or a pinion from a rack (rad/m), with optional ``offset`` and
+``backlash``. It is a two-way spring coupling of finite ``stiffness`` written into both joints' position drives
+before every physics step, so a blocked follower stalls the driver through the drive and nothing is placed by a
+formula. Mech refuses a gear the 240 Hz step would not keep stable. ``gear_report``, ``gear_target`` and
+``gear_slip`` for check.py and score(). Not meshing teeth: the fidelity note must say so (see Gear).
+
+Contact: ``watch_touch("hot_plate")`` at import, then ``touch_state("hot_plate")`` in score() says whether a finger pad
+of either arm touched it this episode (``touched``), the peak and latest normal force and which pad, read from PhysX
+contact views before every physics step. ``watch_fingers()`` and ``finger_force(arm)`` give the net force on an arm's
+fingers from anything (a fingertip contact sense). Offline both return what ``mock_touch`` / ``mock_finger_force``
+scripted (untouched, 0 N by default). A fixed target with no rigid body falls back to a 2 mm pad-to-bounding-box
+distance and reports source "proximity".
+
 Scorer-side hooks: ``@on_step`` runs ``fn(env)`` after every control step, before scoring, and
 ``released(objects["part"])`` (in score() or an on_step hook) is True only when every finger pad of both arms is at
 least 3 cm from the part. Offline, with no simulator, released() is always False. A demo never reads either.
@@ -85,7 +99,7 @@ import math
 import os
 import sys
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, NamedTuple
 
 import numpy as np
 from yam_arena.task_file import Box, ObjectState
@@ -97,14 +111,18 @@ __all__ = ["Mech", "Joint", "MechState", "Shape", "box", "cyl", "rod", "lathe", 
            "contact_offset", "max_drop", "creep", "creep_rate", "gravity_sign", "articulation_iterations",
            "body_poses", "contact_pairs", "self_gap", "MAX_CHAIN",
            "Thread", "ScrewState", "screw", "screw_law", "screw_hold", "screw_unwrap", "screw_states", "screw_report",
-           "seat_travel", "lamp", "lamp_states", "set_lamp", "timetable", "blink_code", "step_count", "elapsed"]
+           "seat_travel", "lamp", "lamp_states", "set_lamp", "timetable", "blink_code", "step_count", "elapsed",
+           "Gear", "GearTargets", "gear_law", "gear_gains", "gear_target", "gear_slip", "gear_report",
+           "max_gear_stiffness", "Touch", "TouchState", "watch_touch", "watch_fingers", "touch_state", "finger_force",
+           "mock_touch", "mock_finger_force", "clear_contact_mocks", "touch_report", "FINGER_LINKS"]
 
 _RESET_HOOKS: list[Any] = []
 _STEP_HOOKS: list[Any] = []
 _ENV: dict[str, Any] = {"env": None}  # the live env, set before every on_step / on_reset run
 _LIVE: dict[tuple[str, str], float] = {}  # (mech, joint) -> spring rest currently written by a detent
 _SCREWS: dict[tuple[str, str], dict[str, float]] = {}  # (mech, threaded hinge) -> unwrapped theta, last reading, hold
-_ARMED: dict[str, bool] = {"screws": False}  # screw coupling writes only between a finished reset and the next one
+_ARMED: dict[str, bool] = {"screws": False, "gears": False, "contacts": False}  # physics-step writes and contact
+# reads run only between a finished reset and the next one
 _LAMP_STATE: dict[tuple[str, str], str] = {}  # (mech, lamp) -> state set by set_lamp ("off" or a lit state)
 _LAMP_PRIMS: dict[str, dict[str, dict[str, str]]] = {}  # mech -> lamp -> state -> lens prim path (env 0)
 _LAMP_SHOWN: dict[str, bool] = {}  # lens prim path -> shown, so set_lamp only writes changes
@@ -241,6 +259,55 @@ class Thread:
 
 
 @dataclass(frozen=True)
+class Gear:
+    """What makes a joint follow another (``Joint(..., follows=Gear("knob", 6.0))``, or the tuple
+    ``follows=("knob", 6.0)`` / ``("knob", 6.0, offset)``): a gear, belt or rack coupling inside one Mech.
+
+    Law: follower = ``ratio`` x driver + ``offset``, both measured from rest like ``MechState.joints``. ``ratio`` is
+    follower units per driver unit: rad/rad for two hinges (negative for an external mesh, which turns the other way),
+    m/m for two slides, m/rad for a pinion driving a rack (its pitch radius) and rad/m for a rack driving a pinion.
+    ``backlash`` is the total lost motion measured at the driver (rad or m): reverse the driver this far before the
+    follower moves again.
+
+    It is a two-way physical drive, not a formula that places the follower. Before every physics step the kit writes
+    the follower's position drive toward the law (a spring of ``stiffness``, follower units: N m/rad or N/m) and the
+    driver's position drive toward the matching point (stiffness x ratio^2), so each joint feels the other's reaction:
+    a blocked follower stalls the driver after a wind up of about effort / (stiffness x ratio^2), and pushing the
+    follower back drives the driver (no self-locking, unlike a screw). ``damping`` acts on the slip between them
+    (None: critical for the pair). ``stiffness`` None picks half the stiffest value the coupling stays stable at."""
+
+    driver: str
+    ratio: float
+    offset: float = 0.0
+    backlash: float = 0.0
+    stiffness: float | None = None
+    damping: float | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.driver, str) or not self.driver:
+            raise ValueError(f"gear: driver must be the name of another joint of the Mech, got {self.driver!r}")
+        ratio = _finite("gear: ratio", self.ratio)
+        if ratio == 0.0:
+            raise ValueError("gear: ratio must be nonzero")
+        object.__setattr__(self, "ratio", ratio)
+        object.__setattr__(self, "offset", _finite("gear: offset", self.offset))
+        backlash = _finite("gear: backlash", self.backlash)
+        if backlash < 0:
+            raise ValueError(f"gear: backlash must be >= 0, got {backlash}")
+        object.__setattr__(self, "backlash", backlash)
+        if self.stiffness is not None:
+            k = _finite("gear: stiffness", self.stiffness)
+            if k <= 0:
+                raise ValueError(f"gear: stiffness must be > 0, got {k}")
+            object.__setattr__(self, "stiffness", k)
+        if self.damping is not None:
+            c = _finite("gear: damping", self.damping)
+            if c < 0:
+                raise ValueError(f"gear: damping must be >= 0, got {c}")
+            object.__setattr__(self, "damping", c)
+
+
+@dataclass(frozen=True)
 class Joint:
     """A moving piece. ``at`` is the joint's origin in the Mech frame and the moving piece's own frame at rest. ``low`` and
     ``high`` are its stops, which must include 0 (rest). ``spring`` is N/m or N m/rad toward rest; 0 leaves it free.
@@ -264,7 +331,10 @@ class Joint:
 
     ``thread`` makes a hinge a screw on its carrier slide (see Thread and ``screw()``). A threaded hinge is authored
     without limits (it spins freely, like a cap on its neck) and its value is the kit's unwrapped turn angle; the travel
-    stops are the carrier's ``low`` and ``high``. A carrier slide may have no shapes; any other joint needs one."""
+    stops are the carrier's ``low`` and ``high``. A carrier slide may have no shapes; any other joint needs one.
+
+    ``follows`` makes this joint a follower geared to another joint of the same Mech (see Gear): a meter needle on a
+    knob, a geared output on a crank, a rack on a pinion. Its own ``spring`` and ``damping`` still act toward rest."""
 
     name: str
     kind: str  # "slide" or "hinge"
@@ -283,8 +353,24 @@ class Joint:
     armature: float = 0.0
     parent: str | None = None
     thread: Thread | None = None
+    follows: Gear | tuple | None = None
 
     def __post_init__(self) -> None:
+        if self.follows is not None:
+            g = self.follows
+            if isinstance(g, (tuple, list)):
+                if not 2 <= len(g) <= 3:
+                    raise ValueError(f"joint {self.name}: follows takes (driver, ratio) or (driver, ratio, offset), "
+                                     f"or a Gear; got {g!r}")
+                g = Gear(*g)
+            if not isinstance(g, Gear):
+                raise ValueError(f"joint {self.name}: follows must be a Gear, a (driver, ratio[, offset]) tuple or "
+                                 f"None, got {g!r}")
+            if g.driver == self.name:
+                raise ValueError(f"joint {self.name}: cannot follow itself")
+            if self.thread is not None:
+                raise ValueError(f"joint {self.name}: a threaded hinge cannot also follow a gear")
+            object.__setattr__(self, "follows", g)
         if self.thread is not None:
             if not isinstance(self.thread, Thread):
                 raise ValueError(f"joint {self.name}: thread must be a Thread or None, got {self.thread!r}")
@@ -343,6 +429,7 @@ class Mech(Box):
             raise ValueError(f"mech {self.name}: joint names repeat: {names}")
         _check_chains(self)
         _check_threads(self)
+        _check_gears(self)
         _check_lamps(self)
         corners =_local_corners(self, {j.name: 0.0 for j in self.joints})
         object.__setattr__(self, "size", tuple(float(v) for v in corners.max(0) - corners.min(0)))
@@ -782,6 +869,551 @@ def screw_report(spec: Mech) -> list[str]:
     return out
 
 
+# -- gears: one joint driven by another at a ratio, pure NumPy --------------------------------------------------------
+#
+# The coupling is a spring and damper between the follower and ratio x driver (+ offset), split into two implicit
+# position drives: the follower's drive pulls it toward the law, the driver's drive (stiffness x ratio^2) pulls it
+# toward where the follower says it should be, so each feels the other's reaction (virtual work: driver effort =
+# -ratio x follower effort). Both are written before every physics step from the joints' readings at that step, the
+# hook the screw threads use. Each drive is implicit in its own joint and explicit in the other, so a stiff gear between
+# two light joints can ring; Mech refuses a gear whose discrete coupling (modelled below the way the PhysX drives step)
+# is not stable, and ``stiffness=None`` picks half the stiffest stable value.
+
+GEAR_RATIO = {("hinge", "hinge"): (1e-3, 1e3), ("slide", "slide"): (1e-2, 1e2), ("hinge", "slide"): (1e-4, 0.5),
+              ("slide", "hinge"): (2.0, 1e4)}  # (driver kind, follower kind): allowed |ratio|
+GEAR_STIFFNESS_CAP = 1.0e5  # N m/rad or N/m: the stiffest gear the kit will pick or accept
+GEAR_RHO = 0.999  # an oscillating mode of the discrete coupling must shrink at least this much per physics step
+
+
+class GearTargets(NamedTuple):
+    """One physics step of the gear law: each joint's position and velocity drive target, whether the teeth are
+    engaged (outside the backlash) and the engaged strain (follower units) the drives act on."""
+
+    follower_pos: float
+    follower_vel: float
+    driver_pos: float
+    driver_vel: float
+    engaged: bool
+    strain: float
+
+
+class _GearLink(NamedTuple):
+    follower: Joint
+    driver: Joint
+    ratio: float
+    offset: float
+    backlash: float
+    stiffness: float
+    damping: float
+
+
+def gear_law(ratio: float, offset: float, backlash: float, q_driver: float, v_driver: float, q_follower: float,
+             v_follower: float, dt: float = 1.0 / 240.0) -> GearTargets:
+    """Drive targets for one physics step of length ``dt`` from the joints' positions and velocities at its start.
+    Each joint is predicted to the end of the step (q + v dt); the strain is ratio x driver + offset - follower, less
+    half the backlash (scaled to the follower) on the side the teeth touch. Inside the backlash nothing is engaged: each
+    target is the joint's own prediction, so the drives push nothing. Engaged, the follower's target is its prediction
+    plus the strain and the driver's its prediction minus strain / ratio, with velocity targets ratio x driver speed
+    and follower speed / ratio, so the follower's drive gives stiffness x strain and the driver's -ratio times that."""
+    r = float(ratio)
+    qd, qf = float(q_driver) + float(v_driver) * dt, float(q_follower) + float(v_follower) * dt
+    s = r * qd + float(offset) - qf
+    h = abs(r) * float(backlash) / 2.0
+    if h > 0.0 and abs(s) <= h:
+        return GearTargets(qf, float(v_follower), qd, float(v_driver), False, 0.0)
+    strain = s - math.copysign(h, s)
+    return GearTargets(qf + strain, r * float(v_driver), qd - strain / r, float(v_follower) / r, True, strain)
+
+
+def _gear_inertia(j: Joint) -> float:
+    """Inertia the joint's drive moves (kg or kg m^2), its armature included; its riders are left out (lighter is
+    the harder case for the coupling's stability)."""
+    return _joint_inertia(j) + float(j.armature)
+
+
+def _gear_drive(links, own: dict, q: dict, v: dict, rest: dict, dt: float) -> dict[str, tuple[float, float, float,
+                                                                                                    float]]:
+    """{joint: (stiffness, position target, damping, velocity target)} of every geared joint's drive: its own spring
+    toward its rest and damping toward 0 (``own`` = {joint: (spring, damping)}), plus every gear it is in, combined
+    into one drive (stiffness-weighted target, damping-weighted velocity). This is what the simulator writes."""
+    acc = {n: [float(k), float(k) * float(rest.get(n, 0.0)), float(c), 0.0] for n, (k, c) in own.items()}
+    for g in links:
+        f, d = g.follower.name, g.driver.name
+        t = gear_law(g.ratio, g.offset, g.backlash, q[d], v[d], q[f], v[f], dt)
+        r2 = g.ratio * g.ratio
+        for n, k, c, pos, vel in ((f, g.stiffness, g.damping, t.follower_pos, t.follower_vel),
+                                  (d, g.stiffness * r2, g.damping * r2, t.driver_pos, t.driver_vel)):
+            a = acc.setdefault(n, [0.0, 0.0, 0.0, 0.0])
+            a[0] += k
+            a[1] += k * pos
+            a[2] += c
+            a[3] += c * vel
+    return {n: (k, kt / k if k > 0 else 0.0, c, cv / c if c > 0 else 0.0) for n, (k, kt, c, cv) in acc.items()}
+
+
+def _drive_step(drive: dict, inertia: dict, q: dict, v: dict, dt: float) -> tuple[dict, dict]:
+    """One implicit step of each joint under its own drive (as a PhysX position drive steps): v1 = (I v0 + dt (K (T -
+    q0) + C V)) / (I + dt C + dt^2 K), q1 = q0 + v1 dt."""
+    q1, v1 = {}, {}
+    for n, (k, t, c, vel) in drive.items():
+        i = inertia[n]
+        v1[n] = (i * v[n] + dt * (k * (t - q[n]) + c * vel)) / (i + dt * c + dt * dt * k)
+        q1[n] = q[n] + v1[n] * dt
+    return q1, v1
+
+
+def _gear_matrix(links, own: dict, inertia: dict, dt: float) -> np.ndarray:
+    """The linear map one physics step applies to (positions, velocities) of the geared joints, teeth engaged (no
+    backlash, offsets and rests at 0)."""
+    names = sorted(own)
+    plain = [g._replace(offset=0.0, backlash=0.0) for g in links]
+    n = len(names)
+    m = np.zeros((2 * n, 2 * n))
+    for col in range(2 * n):
+        x = np.zeros(2 * n)
+        x[col] = 1.0
+        q, v = dict(zip(names, x[:n])), dict(zip(names, x[n:]))
+        q1, v1 = _drive_step(_gear_drive(plain, own, q, v, {}, dt), inertia, q, v, dt)
+        m[:, col] = [q1[k] for k in names] + [v1[k] for k in names]
+    return m
+
+
+def _gear_stable(m: np.ndarray) -> bool:
+    """No mode grows, and every fast mode (turning more than a quarter cycle a step, the step-to-step ringing of two
+    drives explicit in each other) shrinks by GEAR_RHO a step at least. A mode at +1 is the gear train turning freely,
+    and a slow lightly damped mode is a physical oscillation; both are fine."""
+    for lam in np.linalg.eigvals(m):
+        a = abs(lam)
+        if a > 1.0 + 1e-9:
+            return False
+        if a > GEAR_RHO and abs(np.angle(lam)) > math.pi / 2:
+            return False
+    return True
+
+
+def _pair(follower: Joint, driver: Joint, g: Gear, k: float) -> _GearLink:
+    """The link at stiffness k, damping as given or critical for the pair's reduced inertia (follower units)."""
+    i_f, i_d = _gear_inertia(follower), _gear_inertia(driver) * g.ratio ** 2
+    c = g.damping if g.damping is not None else 2.0 * math.sqrt(k * i_f * i_d / (i_f + i_d))
+    return _GearLink(follower, driver, g.ratio, g.offset, g.backlash, float(k), float(c))
+
+
+def _system_stable(links, joints: dict[str, Joint], dt: float = 1.0 / 240.0) -> bool:
+    names = {n for g in links for n in (g.follower.name, g.driver.name)}
+    own = {n: (joints[n].spring, joints[n].damping) for n in names}
+    inertia = {n: _gear_inertia(joints[n]) for n in names}
+    return _gear_stable(_gear_matrix(links, own, inertia, dt))
+
+
+def max_gear_stiffness(follower: Joint, driver: Joint, ratio: float, damping: float | None = None,
+                       dt: float = 1.0 / 240.0) -> float:
+    """The stiffest gear (follower units, N m/rad or N/m) between these two joints that the discrete coupling stays
+    stable at, up to GEAR_STIFFNESS_CAP; 0 when none is. Give the driver armature (a gear train's own inertia) or
+    lighten the stiffness to stay under it."""
+    g = Gear(driver.name, ratio, damping=damping)
+    joints = {follower.name: follower, driver.name: driver}
+
+    def ok(k: float) -> bool:
+        return _system_stable([_pair(follower, driver, g, k)], joints, dt)
+
+    lo, hi = 1e-7, GEAR_STIFFNESS_CAP
+    if ok(hi):
+        return hi
+    if not ok(lo):
+        return 0.0
+    for _ in range(60):
+        mid = math.sqrt(lo * hi)
+        lo, hi = (mid, hi) if ok(mid) else (lo, mid)
+    return float(lo)
+
+
+def _gear_rest(spec: Mech, links) -> dict[str, float]:
+    """Each geared joint's value at rest by the law: drivers that follow nothing at 0, every follower at ratio x its
+    driver + offset (through a gear train)."""
+    by = {g.follower.name: g for g in links}
+    out: dict[str, float] = {}
+
+    def value(name: str) -> float:
+        if name not in out:
+            g = by.get(name)
+            out[name] = 0.0 if g is None else g.ratio * value(g.driver.name) + g.offset
+        return out[name]
+
+    for g in links:
+        value(g.follower.name)
+        value(g.driver.name)
+    return out
+
+
+def _check_gears(spec: Mech) -> None:
+    """Refuse unknown drivers, gear cycles, threads and carriers in a gear, ratios out of range, hinges past a turn
+    either way, rest values outside the stops, backlash wider than half the driver's travel, and couplings the
+    physics step would not keep stable; then resolve default stiffness and damping."""
+    by = {j.name: j for j in spec.joints}
+    carriers = {c.name for _, c in _threads(spec)}
+    links = []
+    for f in spec.joints:
+        g = f.follows
+        if g is None:
+            continue
+        if g.driver not in by:
+            raise ValueError(f"mech {spec.name}: joint {f.name} follows {g.driver!r}, which is not a joint of the Mech "
+                             f"(joints: {sorted(by)})")
+        d = by[g.driver]
+        for j in (f, d):
+            if j.thread is not None or j.name in carriers:
+                raise ValueError(f"mech {spec.name}: joint {j.name} is part of a screw thread and cannot be in a gear")
+            if j.kind == "hinge" and (j.low < -2.0 * math.pi or j.high > 2.0 * math.pi):
+                raise ValueError(f"mech {spec.name}: geared hinge {j.name} has stops {j.low:.4g}..{j.high:.4g} rad; "
+                                 "a geared hinge stays within one turn either way of rest")
+        seen, cur = {f.name}, d
+        while True:
+            if cur.name in seen:
+                raise ValueError(f"mech {spec.name}: gears form a cycle through {cur.name!r}")
+            seen.add(cur.name)
+            if cur.follows is None:
+                break
+            cur = by[cur.follows.driver] if cur.follows.driver in by else None
+            if cur is None:
+                break
+        lo, hi = GEAR_RATIO[(d.kind, f.kind)]
+        if not lo <= abs(g.ratio) <= hi:
+            unit = {"hinge": "rad", "slide": "m"}
+            raise ValueError(f"mech {spec.name}: joint {f.name}: |ratio| {abs(g.ratio):.4g} {unit[f.kind]} per "
+                             f"{unit[d.kind]} of {d.name} is outside {lo:g}..{hi:g} for a {d.kind} driving a {f.kind}")
+        if g.backlash >= (d.high - d.low) / 2.0:
+            raise ValueError(f"mech {spec.name}: joint {f.name}: backlash {g.backlash:.4g} is at least half the "
+                             f"travel of {d.name} ({d.low:.4g}..{d.high:.4g})")
+        k = g.stiffness
+        if k is None:
+            kmax = max_gear_stiffness(f, d, g.ratio, g.damping)
+            if kmax <= 0.0:
+                raise ValueError(f"mech {spec.name}: joint {f.name}: no stable gear stiffness to {d.name}; give the "
+                                 "driver armature or more mass")
+            k = kmax if kmax >= GEAR_STIFFNESS_CAP else 0.5 * kmax
+        elif k > GEAR_STIFFNESS_CAP:
+            raise ValueError(f"mech {spec.name}: joint {f.name}: gear stiffness {k:.4g} is over the cap "
+                             f"{GEAR_STIFFNESS_CAP:g}")
+        link = _pair(f, d, g, k)
+        if not _system_stable([link], {f.name: f, d.name: d}):
+            kmax = max_gear_stiffness(f, d, g.ratio, g.damping)
+            raise ValueError(f"mech {spec.name}: joint {f.name}: a gear of stiffness {k:.4g} to {d.name} rings at "
+                             f"240 Hz (the drives are explicit in each other); the stiffest stable is about "
+                             f"{kmax:.4g}: lower stiffness, or give the lighter joint armature")
+        links.append(link)
+    if not links:
+        object.__setattr__(spec, "_gears", ())
+        return
+    for name, value in _gear_rest(spec, links).items():
+        j = by[name]
+        if not j.low - 1e-12 <= value <= j.high + 1e-12:
+            raise ValueError(f"mech {spec.name}: joint {name} rests at {value:.4g} by its gear law, outside its stops "
+                             f"{j.low:.4g}..{j.high:.4g}; check the offset")
+    if not _system_stable(links, by):
+        raise ValueError(f"mech {spec.name}: its gears are stable one by one but not together (a joint in two "
+                         "gears); lower their stiffness or give the shared joint armature")
+    object.__setattr__(spec, "_gears", tuple(links))
+
+
+def _gear_links(spec) -> tuple:
+    return getattr(spec, "_gears", ())
+
+
+def gear_gains(spec: Mech) -> dict[str, tuple[float, float]]:
+    """{joint: (extra stiffness, extra damping)} every gear adds to its joints' drives: stiffness and damping on a
+    follower, stiffness x ratio^2 and damping x ratio^2 on a driver. The simulator authors spring + extra."""
+    out: dict[str, list[float]] = {}
+    for g in _gear_links(spec):
+        r2 = g.ratio * g.ratio
+        for n, k, c in ((g.follower.name, g.stiffness, g.damping), (g.driver.name, g.stiffness * r2, g.damping * r2)):
+            a = out.setdefault(n, [0.0, 0.0])
+            a[0] += k
+            a[1] += c
+    return {n: (float(k), float(c)) for n, (k, c) in out.items()}
+
+
+def gear_target(spec: Mech, follower: str, driver_value: float) -> float:
+    """Where the law puts follower ``follower`` for a driver value (ratio x value + offset), ignoring compliance and
+    backlash. For check.py and score() margins."""
+    for g in _gear_links(spec):
+        if g.follower.name == follower:
+            return float(g.ratio * float(driver_value) + g.offset)
+    raise ValueError(f"mech {spec.name}: no geared follower {follower!r}")
+
+
+def gear_slip(spec: Mech, state) -> dict[str, float]:
+    """{follower: its value minus where the law puts it} from a state's joint values: the gear's compliance under
+    load plus any backlash taken up (follower units). Raises when a value is missing rather than assume rest."""
+    out = {}
+    for g in _gear_links(spec):
+        missing = [n for n in (g.follower.name, g.driver.name) if n not in state.joints]
+        if missing:
+            raise ValueError(f"gear_slip: mech {spec.name}: the state has no value for joints {missing}")
+        out[g.follower.name] = float(state.joints[g.follower.name]
+                                     - (g.ratio * state.joints[g.driver.name] + g.offset))
+    return out
+
+
+def gear_report(spec: Mech) -> list[str]:
+    """One line per gear for check.py: the law, stiffness and damping, what the driver feels, how far gravity sags the
+    follower against the gear, and how far the driver winds up per unit of effort when the follower is blocked."""
+    unit = {"hinge": ("rad", "N m"), "slide": ("m", "N")}
+    out = []
+    for g in _gear_links(spec):
+        f, d = g.follower, g.driver
+        (fu, fe), (du, de) = unit[f.kind], unit[d.kind]
+        kd = g.stiffness * g.ratio ** 2
+        line = (f"{f.name}: follows {d.name} x {g.ratio:.4g} {fu}/{du} + {g.offset:.4g} {fu}, stiffness "
+                f"{g.stiffness:.4g} {fe}/{fu}, damping {g.damping:.4g}, driver feels {kd:.4g} {de}/{du}, "
+                f"gravity sags the follower {gravity_load(f) / g.stiffness:.3g} {fu}, a blocked follower winds the "
+                f"driver {1.0 / kd:.3g} {du} per {de}")
+        if g.backlash > 0:
+            line += f", backlash {g.backlash:.4g} {du} at the driver"
+        if f.damping > 0:  # Joint's default damping (5.0) is heavy for a light follower: the driver feels it
+            line += (f", the follower's own damping takes {f.damping * abs(g.ratio) ** 2:.3g} {de} at the driver "
+                     f"per {du}/s (lower Joint damping on a light follower)")
+        out.append(line)
+    return out
+
+
+# -- contact: has a finger pad touched an object, pure part ------------------------------------------------------------
+#
+# In the simulator the YAM arm USD carries PhysX contact reporting on every link (yam_arena's arm config activates
+# contact sensors), but the inspect embodiment builds no ContactSensor, so Isaac Lab leaves PhysX contact processing
+# off. A task that declares a watch turns it back on (the carb setting /physics/disableContactProcessing, as Isaac
+# Lab's own ContactSensor does) and the kit reads PhysX rigid contact views built on the finger links: per watch, the
+# normal force between each pad link and the target's rigid bodies (get_contact_force_matrix); per arm, the net
+# normal force on each finger link from anything (get_net_contact_forces). Both are read before every physics step
+# (the previous step's contacts) and once more after each control step, the way accepted cable and cutting kits read
+# them. A target with no rigid body (a fixed Box, a jointless fixed Mech) cannot be a contact-view filter; its watch
+# falls back to a pad-to-bounding-box distance under PROXIMITY_TOL, measured each control step, and says so.
+
+FINGER_LINKS = ("tip_left", "tip_right")  # the YAM finger links; "gripper" (the palm body) may be watched too
+TOUCH_LINKS = (*FINGER_LINKS, "gripper")
+ARM_ASSETS = {"left": "left_robot", "right": "right_robot"}  # yam_arena scene keys
+ARM_PRIMS = {"left": "LeftArm", "right": "RightArm"}  # yam_arena prim names under each env
+TOUCH_MIN_FORCE = 0.05  # N: a pad touches when its normal force reaches this (yam_arena's stage scripts use 0.05 N)
+PROXIMITY_TOL = 0.002  # m: fallback touch distance from a pad face point to the target's bounding box
+
+
+@dataclass(frozen=True)
+class Touch:
+    """A contact watch (``watch_touch(...)``): whether the finger pads ``links`` of ``arms`` touch object ``target``
+    (its rigid bodies, or only ``bodies``, which for a Mech are "base" and joint names), with a normal force of at
+    least ``min_force`` N. ``name`` (default the target) is how score() asks for it."""
+
+    target: str
+    bodies: tuple[str, ...] = ()
+    arms: tuple[str, ...] = ("left", "right")
+    links: tuple[str, ...] = FINGER_LINKS
+    min_force: float = TOUCH_MIN_FORCE
+    name: str = ""
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.target, str) or not self.target:
+            raise ValueError(f"touch: target must be an object name, got {self.target!r}")
+        for field_name, allowed in (("arms", tuple(ARM_ASSETS)), ("links", TOUCH_LINKS)):
+            vals = getattr(self, field_name)
+            vals = (vals,) if isinstance(vals, str) else tuple(vals)
+            if not vals or len(set(vals)) != len(vals) or any(v not in allowed for v in vals):
+                raise ValueError(f"touch {self.target}: {field_name} must be distinct names from {allowed}, "
+                                 f"got {vals!r}")
+            object.__setattr__(self, field_name, vals)
+        bodies = (self.bodies,) if isinstance(self.bodies, str) else tuple(self.bodies)
+        if any(not isinstance(b, str) or not b or "/" in b for b in bodies) or len(set(bodies)) != len(bodies):
+            raise ValueError(f"touch {self.target}: bodies must be distinct body names, got {self.bodies!r}")
+        object.__setattr__(self, "bodies", bodies)
+        f = _finite(f"touch {self.target}: min_force", self.min_force)
+        if f <= 0:
+            raise ValueError(f"touch {self.target}: min_force must be > 0 N, got {f}")
+        object.__setattr__(self, "min_force", f)
+        object.__setattr__(self, "name", self.name or self.target)
+
+    @property
+    def pads(self) -> tuple[str, ...]:
+        """The watched pads as "arm/link" keys, arm by arm."""
+        return tuple(f"{a}/{k}" for a in self.arms for k in self.links)
+
+
+@dataclass(frozen=True)
+class TouchState:
+    """What a watch saw since the last reset. ``touched``: some pad reached min_force (or, in the proximity
+    fallback, came within PROXIMITY_TOL) at any physics step; ``touching``: one does now (the latest reading);
+    ``peak`` and ``now``: largest normal force (N) over the episode and at the latest reading, over the pads asked
+    for; ``pads`` and ``pads_now``: the same per "arm/link"; ``first_step``: the control step of the first touch;
+    ``source``: "physx" (measured contact forces), "proximity" (distance fallback: forces are nan), "offline" (no
+    simulator: the scripted mock, untouched unless mock_touch set it)."""
+
+    name: str
+    touched: bool
+    touching: bool
+    peak: float
+    now: float
+    first_step: int | None
+    pads: dict[str, float]
+    pads_now: dict[str, float]
+    source: str
+
+
+_TOUCHES: dict[str, Touch] = {}  # watch name -> Touch, registered by watch_touch at task import
+_FINGER_SENSE: dict[str, bool] = {"on": False}  # watch_fingers() (or any watch) asks for the net finger force
+_TOUCH_MOCK: dict[str, dict] = {}  # watch name -> scripted accumulator, offline only
+_FINGER_MOCK: dict[str, float] = {}  # arm -> scripted net finger force, offline only
+
+
+def watch_touch(target: str, bodies=(), arms=("left", "right"), links=FINGER_LINKS, min_force: float = TOUCH_MIN_FORCE,
+                name: str | None = None) -> Touch:
+    """Declare, at task import, a contact watch between finger pads and object ``target`` (see Touch); score() then
+    reads ``touch_state(name)``. Watching also turns on the net finger force (``finger_force``). Declaring the same
+    watch twice is harmless; a different watch under a used name raises."""
+    t = Touch(target, bodies, arms, links, min_force, name or "")
+    old = _TOUCHES.get(t.name)
+    if old is not None and old != t:
+        raise ValueError(f"watch_touch: a different watch is already named {t.name!r}: {old}")
+    _TOUCHES[t.name] = t
+    _FINGER_SENSE["on"] = True
+    return t
+
+
+def watch_fingers() -> None:
+    """Declare, at task import, that the scorer or the closed-loop demo reads the net normal force on each arm's
+    finger links (``finger_force``): the robot's own fingertip contact sense, with no object named."""
+    _FINGER_SENSE["on"] = True
+
+
+def contacts_wanted() -> bool:
+    """True when the task declared a watch or the finger sense, so the simulator must process contacts."""
+    return bool(_TOUCHES) or _FINGER_SENSE["on"]
+
+
+def _new_touch_acc(t: Touch) -> dict:
+    nan = float("nan")
+    return {"peak": {p: 0.0 for p in t.pads}, "now": {p: 0.0 for p in t.pads}, "ever": {p: False for p in t.pads},
+            "hit": {p: False for p in t.pads}, "first": None, "source": "offline", "nan": nan}
+
+
+def _touch_update(acc: dict, t: Touch, step: int, forces: dict | None = None, hits: dict | None = None) -> None:
+    """Fold one reading into a watch's accumulator: ``forces`` {pad: normal force N} (measured; a pad touches at
+    min_force), or ``hits`` {pad: bool} (the proximity fallback, forces unknown: nan)."""
+    for p in t.pads:
+        if forces is not None:
+            f = float(forces.get(p, 0.0))
+            hit = f >= t.min_force
+            acc["now"][p] = f
+            acc["peak"][p] = max(acc["peak"][p], f) if not math.isnan(acc["peak"][p]) else f
+        else:
+            hit = bool((hits or {}).get(p, False))
+            acc["now"][p] = acc["peak"][p] = float("nan")
+        acc["hit"][p] = hit
+        if hit:
+            acc["ever"][p] = True
+            if acc["first"] is None:
+                acc["first"] = int(step)
+
+
+def _touch_view(t: Touch, acc: dict, arm: str | None) -> TouchState:
+    if arm is not None and arm not in t.arms:
+        raise ValueError(f"touch_state: watch {t.name} does not watch the {arm} arm (arms: {t.arms})")
+    pads = [p for p in t.pads if arm is None or p.startswith(arm + "/")]
+
+    def top(vals) -> float:
+        vals = [v for v in vals if not math.isnan(v)]
+        return float(max(vals)) if vals else float("nan")
+
+    ever = any(acc["ever"][p] for p in pads)
+    return TouchState(name=t.name, touched=ever, touching=any(acc["hit"][p] for p in pads),
+                      peak=top(acc["peak"][p] for p in pads), now=top(acc["now"][p] for p in pads),
+                      first_step=acc["first"] if ever else None, pads={p: float(acc["peak"][p]) for p in pads},
+                      pads_now={p: float(acc["now"][p]) for p in pads}, source=acc["source"])
+
+
+def mock_touch(name: str, peak: float = 0.0, now: float = 0.0, arm: str = "right", link: str = "tip_left",
+               step: int = 1) -> TouchState:
+    """Script an offline answer for watch ``name`` (for check.py scorer cases): pad ``arm``/``link`` reached ``peak``
+    N during the episode and reads ``now`` N at the end. Calls add up pad by pad; clear_contact_mocks() forgets them.
+    Ignored while the simulator runs."""
+    t = _touch(name)
+    acc = _TOUCH_MOCK.setdefault(name, _new_touch_acc(t))
+    pad = f"{arm}/{link}"
+    if pad not in t.pads:
+        raise ValueError(f"mock_touch: watch {name} has no pad {pad!r} (pads: {t.pads})")
+    for f in (float(peak), float(now)):
+        _touch_update(acc, t, step, forces={pad: f})
+    acc["peak"][pad] = max(float(peak), float(now))
+    return _touch_view(t, acc, None)
+
+
+def mock_finger_force(arm: str, force: float) -> None:
+    """Script the offline net finger force (N) of ``arm`` for scorer tests. Ignored while the simulator runs."""
+    if arm not in ARM_ASSETS:
+        raise ValueError(f"mock_finger_force: arm must be one of {tuple(ARM_ASSETS)}, got {arm!r}")
+    _FINGER_MOCK[arm] = _finite("mock_finger_force: force", force)
+
+
+def clear_contact_mocks() -> None:
+    _TOUCH_MOCK.clear()
+    _FINGER_MOCK.clear()
+
+
+def _touch(name: str) -> Touch:
+    if name not in _TOUCHES:
+        raise ValueError(f"no contact watch {name!r}; declare it at import with watch_touch(...) (watches: "
+                         f"{sorted(_TOUCHES)})")
+    return _TOUCHES[name]
+
+
+def touch_report() -> list[str]:
+    """One line per watch for check.py: target, bodies, pads and threshold."""
+    return [f"{t.name}: {', '.join(t.pads)} on {t.target}"
+            + (f" bodies {', '.join(t.bodies)}" if t.bodies else " (every rigid body)")
+            + f", touch at {t.min_force:g} N" for t in _TOUCHES.values()]
+
+
+def _match_bodies(paths, target: str, bodies=()) -> list[str]:
+    """Rigid-body prim paths of env 0 that belong to object ``target`` (a path segment equal to it), and, when
+    ``bodies`` is given, whose last segment is one of them."""
+    out = []
+    for p in paths:
+        segs = p.split("/")
+        if target in segs[:-1] or segs[-1] == target:
+            if not bodies or segs[-1] in bodies:
+                out.append(p)
+    return out
+
+
+def _pad_paths(link_paths: dict[str, list[str]], t_arms, links) -> dict[str, str]:
+    """{"arm/link": prim path} for each watched pad from each arm's link prim paths. Raises when one is missing."""
+    out = {}
+    for arm in t_arms:
+        for link in links:
+            hits = [p for p in link_paths.get(arm, []) if p.rsplit("/", 1)[-1] == link]
+            if len(hits) != 1:
+                raise RuntimeError(f"contact: {len(hits)} prims named {link!r} on the {arm} arm")
+            out[f"{arm}/{link}"] = hits[0]
+    return out
+
+
+def _any_numpy(x) -> np.ndarray:
+    x = getattr(x, "torch", x)
+    if hasattr(x, "detach"):
+        return x.detach().cpu().numpy().astype(np.float64)
+    return np.asarray(x.numpy() if hasattr(x, "numpy") else x, dtype=np.float64)
+
+
+def _pad_forces(matrix, pads, n_filters: int) -> dict[str, float]:
+    """{pad: |normal force| from the target} from a contact view's force matrix (sensors x filters x 3): each pad's
+    force vectors from all the target's bodies are summed, then its length taken."""
+    fm = _any_numpy(matrix).reshape(len(pads), n_filters, 3)
+    return {p: float(np.linalg.norm(fm[i].sum(axis=0))) for i, p in enumerate(pads)}
+
+
+def _net_force(net) -> float:
+    """The arm's finger contact sense from a net-force view (finger links x 3): the largest finger's force. A max, not
+    a sum, so two pads squeezing a part do not cancel."""
+    f = _any_numpy(net).reshape(-1, 3)
+    return float(np.linalg.norm(f, axis=1).max(initial=0.0))
+
+
 # -- indicator lamps, pure -----------------------------------------------------------------------------------------------
 
 LAMP_OFF = (0.16, 0.16, 0.16)  # unlit lens colour
@@ -1061,9 +1693,13 @@ def _detent_plan(mech: str, spec: Mech, values: dict[str, float], live: dict) ->
     return out
 
 
-def _actuator_kwargs(j: Joint) -> dict:
-    """ImplicitActuatorCfg arguments for a joint. Without a hold they are exactly what mechkit always passed."""
+def _actuator_kwargs(j: Joint, spec: Mech | None = None) -> dict:
+    """ImplicitActuatorCfg arguments for a joint. Without a hold or a gear they are exactly what mechkit always
+    passed. A geared joint (``spec`` given) gets its gears' stiffness and damping on top of its own (gear_gains)."""
     kw: dict[str, Any] = {"joint_names_expr": [f"{j.name}_joint"], "stiffness": j.spring, "damping": j.damping}
+    extra = gear_gains(spec).get(j.name) if spec is not None else None
+    if extra is not None:
+        kw.update(stiffness=float(j.spring + extra[0]), damping=float(j.damping + extra[1]))
     if j.hold > 0:
         kw.update(friction=float(j.hold), dynamic_friction=j.moving_hold)
     if j.armature > 0:
@@ -2602,7 +3238,7 @@ def _arena_object(spec: Mech):
     class MechObject(Object):
         def _generate_articulation_cfg(self):
             def spring(j: Joint) -> ImplicitActuatorCfg:
-                kw = _actuator_kwargs(j)
+                kw = _actuator_kwargs(j, spec)
                 try:
                     return ImplicitActuatorCfg(**kw)
                 except TypeError:  # an Isaac Lab without dynamic_friction: keep the static hold
@@ -2683,11 +3319,14 @@ def _patch_scene(scene) -> None:
         return out
 
     def make_env(*args, **kwargs):
+        if contacts_wanted():  # before the simulator is configured, as the accepted live-wire kit does it
+            _enable_contact_processing()
         env = plain_make(*args, **kwargs)
         orig_reset = env.reset
 
         def reset(*r_args, **r_kwargs):
-            _ARMED["screws"] = False  # no screw writes from inside the reset; _reset_live re-arms
+            # no screw or gear writes and no contact reads from inside the reset; _reset_live re-arms
+            _ARMED.update(screws=False, gears=False, contacts=False)
             res = orig_reset(*r_args, **r_kwargs)
             _ENV["env"] = env
             _reset_live(env)
@@ -2773,8 +3412,8 @@ def _detent_step(environment) -> None:
 
 
 def _reset_live(environment) -> None:
-    """Forget every rest a detent wrote and put detent joints' springs back at 0; put every screw back at rest and
-    re-arm its coupling; turn every lamp off; restart the step clock."""
+    """Forget every rest a detent wrote and put detent joints' springs back at 0; put every screw and gear back at
+    rest and re-arm its coupling; turn every lamp off; clear every contact watch; restart the step clock."""
     _LIVE.clear()
     for name, spec, _ in _live_mechs(environment):
         for j in spec.joints:
@@ -2782,7 +3421,9 @@ def _reset_live(environment) -> None:
                 set_rest(environment, name, j.name, 0.0)
     _CLOCK.update(steps=0, seconds=0.0)
     _reset_screws(environment)
+    _reset_gears(environment)
     _reset_lamps()
+    _reset_contacts(environment)
 
 
 # -- run time: screw threads ----------------------------------------------------------------------------------------------
@@ -2816,8 +3457,9 @@ def _reset_screws(environment) -> None:
 
 
 def _hook_physics(environment) -> None:
-    """Run the screw coupling before every physics step: Isaac Lab calls the scene's write_data_to_sim before each
-    240 Hz substep, as the accepted cord and centrifuge kits hook it. Wraps once (its own flag)."""
+    """Run the screw and gear couplings and the contact reads before every physics step: Isaac Lab calls the scene's
+    write_data_to_sim before each 240 Hz substep, as the accepted cord and centrifuge kits hook it. Wraps once (its own
+    flag)."""
     isc = environment.unwrapped.scene
     if getattr(isc, "_mechkit_physics", False):
         return
@@ -2825,6 +3467,8 @@ def _hook_physics(environment) -> None:
 
     def write_data_to_sim(*a, **k):
         _screw_physics(environment)
+        _gear_physics(environment)
+        _contact_poll(environment)
         return write(*a, **k)
 
     isc.write_data_to_sim, isc._mechkit_physics = write_data_to_sim, True
@@ -2853,6 +3497,277 @@ def _screw_physics(environment) -> None:
                     ratio = nut.moving_hold / nut.hold if nut.hold > 0 else HOLD_MOVING
                     set_hold(environment, name, nut.name, hold, ratio * hold)
                     live["hold"] = hold
+
+
+# -- run time: gears ------------------------------------------------------------------------------------------------------
+
+
+def _physics_dt(environment) -> float:
+    dt = getattr(environment.unwrapped, "physics_dt", None)
+    try:
+        dt = float(dt)
+    except (TypeError, ValueError):
+        return PHYSICS_DT
+    return dt if math.isfinite(dt) and dt > 0 else PHYSICS_DT
+
+
+def _write_vel_target(environment, mech: str, joint: str, value: float) -> None:
+    asset = environment.unwrapped.scene[mech]
+    i = _joint_id(asset, joint)
+    v = _sim_tensor(asset, [float(value)])
+    cmd = getattr(getattr(asset, "actuators", None), "target_command", None)
+    if cmd is not None and hasattr(cmd, "set_velocity_index"):
+        cmd.set_velocity_index(value=v, joint_ids=[i])
+    else:
+        asset.set_joint_velocity_target(v, joint_ids=[i])
+
+
+def _reset_gears(environment) -> None:
+    """Put every geared joint at its rest by the law (drivers at 0, followers at ratio x driver + offset) with no
+    velocity, its drive target there, and arm the coupling."""
+    armed = False
+    for name, spec, asset in _live_mechs(environment):
+        links = _gear_links(spec)
+        if not links:
+            continue
+        rest = _gear_rest(spec, links)
+        names = sorted(rest)
+        ids = [_joint_id(asset, n) for n in names]
+        pos = getattr(asset, "write_joint_position_to_sim_index", None) or asset.write_joint_position_to_sim
+        vel = getattr(asset, "write_joint_velocity_to_sim_index", None) or asset.write_joint_velocity_to_sim
+        pos(position=_sim_tensor(asset, [float(rest[n]) for n in names]), joint_ids=ids)
+        vel(velocity=_sim_tensor(asset, [0.0] * len(ids)), joint_ids=ids)
+        for n in names:
+            _write_target(environment, name, n, float(rest[n]))
+            _write_vel_target(environment, name, n, 0.0)
+        armed = True
+    if armed:
+        _hook_physics(environment)
+        _ARMED["gears"] = True
+
+
+def _gear_physics(environment) -> None:
+    """Every armed gear: from the joints' positions and velocities now, write each geared joint's position and
+    velocity drive targets (its own spring toward its rest, detent rests included, plus every gear it is in)."""
+    if not _ARMED["gears"]:
+        return
+    dt = _physics_dt(environment)
+    for name, spec, asset in _live_mechs(environment):
+        links = _gear_links(spec)
+        if not links:
+            continue
+        jn = [n.removesuffix("_joint") for n in asset.joint_names]
+        q = dict(zip(jn, map(float, _to_numpy(asset.data.joint_pos)[0]), strict=True))
+        v = dict(zip(jn, map(float, _to_numpy(asset.data.joint_vel)[0]), strict=True))
+        by = {j.name: j for j in spec.joints}
+        names = {n for g in links for n in (g.follower.name, g.driver.name)}
+        own = {n: (by[n].spring, by[n].damping) for n in names}
+        rest = {n: _LIVE.get((name, n), 0.0) for n in names}
+        for n, (_, target, _, vel) in sorted(_gear_drive(links, own, q, v, rest, dt).items()):
+            _write_target(environment, name, n, float(target))
+            _write_vel_target(environment, name, n, float(vel))
+
+
+# -- run time: contact watches ------------------------------------------------------------------------------------------
+
+_CONTACT: dict[str, Any] = {"env": None, "views": {}, "fingers": {}, "acc": {}, "net": {}, "proximity": set(),
+                            "error": None, "live": False}
+
+
+def _enable_contact_processing() -> None:
+    """Isaac Lab turns PhysX contact processing off unless a ContactSensor exists (the inspect embodiment builds
+    none); switch it back on, as Isaac Lab's own ContactSensor does."""
+    try:
+        import carb
+
+        carb.settings.get_settings().set_bool("/physics/disableContactProcessing", False)
+    except Exception as exc:  # noqa: BLE001 - outside Kit there is nothing to switch
+        print(f"mechkit: could not enable contact processing: {exc!r}", flush=True)
+
+
+def _physics_sim_view(environment):
+    try:
+        from isaaclab_physx.physics import PhysxManager
+
+        view = PhysxManager.get_physics_sim_view()
+    except ImportError:
+        view = None
+    if view is None:
+        view = getattr(getattr(environment.unwrapped, "sim", None), "physics_sim_view", None)
+    if view is None:
+        raise RuntimeError("no PhysX simulation view")
+    return view
+
+
+def _arm_link_paths(environment, stage) -> dict[str, list[str]]:
+    """Each arm's rigid-body link prim paths in env 0: from the articulation's PhysX view, else from the stage."""
+    out: dict[str, list[str]] = {}
+    scene = environment.unwrapped.scene
+    for arm, key in ARM_ASSETS.items():
+        paths = []
+        try:
+            lp = scene[key].root_physx_view.link_paths
+            paths = list(lp[0] if lp and isinstance(lp[0], (list, tuple)) else lp)
+        except Exception:  # noqa: BLE001 - fall back to the stage
+            paths = []
+        if not paths:
+            from pxr import UsdPhysics
+
+            paths = [p.GetPath().pathString for p in stage.Traverse()
+                     if "/env_0/" in p.GetPath().pathString and f"/{ARM_PRIMS[arm]}/" in p.GetPath().pathString
+                     and p.HasAPI(UsdPhysics.RigidBodyAPI)]
+        out[arm] = [str(p) for p in paths]
+    return out
+
+
+def _bind_contacts(environment) -> None:
+    """Build the contact views once per env: one per watch (watched pads x the target's rigid bodies) and one per
+    arm (its finger links, net force). A watch whose target has no rigid body uses the proximity fallback; any other
+    failure is printed once and every watch falls back to proximity, with the finger sense unavailable (nan)."""
+    from isaaclab.sim.utils.stage import get_current_stage
+    from pxr import UsdPhysics
+
+    _enable_contact_processing()
+    c = _CONTACT
+    c.update(env=None, views={}, fingers={}, proximity=set(), error=None)
+    stage = get_current_stage()
+    prims = [p for p in stage.Traverse() if "/env_0/" in p.GetPath().pathString]
+    rigid = [p.GetPath().pathString for p in prims if p.HasAPI(UsdPhysics.RigidBodyAPI)]
+    every = [p.GetPath().pathString for p in prims]
+    targets = {}
+    for t in _TOUCHES.values():
+        paths = _match_bodies(rigid, t.target, t.bodies)
+        if not paths:
+            if not _match_bodies(every, t.target):
+                raise ValueError(f"watch_touch {t.name}: no object {t.target!r} in the scene")
+            if t.bodies:
+                raise ValueError(f"watch_touch {t.name}: object {t.target} has no rigid bodies {t.bodies}")
+            c["proximity"].add(t.name)
+            print(f"mechkit: contact watch {t.name}: {t.target} has no rigid body (fixed); using the proximity "
+                  f"fallback ({PROXIMITY_TOL * 1000:g} mm to its bounding box)", flush=True)
+            continue
+        targets[t.name] = paths
+    try:
+        sv = _physics_sim_view(environment)
+        links = _arm_link_paths(environment, stage)
+        for name, paths in targets.items():
+            t = _TOUCHES[name]
+            pads = _pad_paths(links, t.arms, t.links)
+            sensors = [pads[p] for p in t.pads]
+            view = sv.create_rigid_contact_view(sensors, filter_patterns=[paths] * len(sensors),
+                                                max_contact_data_count=64 * len(sensors) * len(paths))
+            c["views"][name] = (view, t.pads, len(paths))
+        if _FINGER_SENSE["on"]:
+            for arm in ARM_ASSETS:
+                fp = _pad_paths(links, (arm,), FINGER_LINKS)
+                c["fingers"][arm] = sv.create_rigid_contact_view([fp[f"{arm}/{k}"] for k in FINGER_LINKS])
+        print(f"mechkit: contact views: {sorted(c['views'])} measured, {sorted(c['proximity'])} by proximity, finger "
+              f"sense {'on' if c['fingers'] else 'off'}", flush=True)
+    except Exception as exc:  # noqa: BLE001 - degrade to the stated fallback, loudly
+        c["error"] = repr(exc)
+        c["proximity"] |= set(targets)
+        c["views"], c["fingers"] = {}, {}
+        print(f"mechkit: contact views unavailable ({exc!r}); every watch uses the proximity fallback and "
+              "finger_force() reads nan", flush=True)
+    c["env"] = environment
+
+
+def _reset_contacts(environment) -> None:
+    """Clear every watch's episode record and arm the reads; build the views on the first reset of an env."""
+    c = _CONTACT
+    c["acc"] = {n: _new_touch_acc(t) for n, t in _TOUCHES.items()}
+    c["net"] = {}
+    if not contacts_wanted():
+        c["live"] = False
+        return
+    if c["env"] is not environment:
+        _bind_contacts(environment)
+    for n, acc in c["acc"].items():
+        acc["source"] = "proximity" if n in c["proximity"] else "physx"
+    c["live"] = True
+    _hook_physics(environment)
+    _ARMED["contacts"] = True
+
+
+def _arm_face_points(environment) -> dict[str, list[np.ndarray]]:
+    """Each arm's pad face points (the finger_points pads with no 6 mm outset), world relative to the env origin."""
+    from yam_arena.constants import PAD_TIP_PAST_TCP, TCP_OFFSET
+
+    base = environment.unwrapped
+    origin = _to_numpy(base.scene.env_origins)[0]
+    out = {}
+    for arm, key in ARM_ASSETS.items():
+        robot = base.scene[key]
+        pose = _to_numpy(robot.data.body_link_pose_w)[0][list(robot.body_names).index("gripper")]
+        jp, jn = _to_numpy(robot.data.joint_pos)[0], list(robot.joint_names)
+        half_gap = max(abs(float(jp[jn.index(n)])) for n in ("joint7", "joint8") if n in jn)
+        out[arm] = _pad_points(pose, half_gap - 0.006, origin, TCP_OFFSET, PAD_TIP_PAST_TCP)
+    return out
+
+
+def proximity_hits(face_points: dict, part, t: Touch, tol: float = PROXIMITY_TOL) -> dict[str, bool]:
+    """The proximity fallback for one watch: {pad: True} for every pad of an arm whose pad face points come within
+    ``tol`` of the part's world bounding box. It cannot tell the two fingers of an arm apart, so both count."""
+    out = {}
+    for arm in t.arms:
+        near = finger_clearance(face_points[arm], part) <= tol
+        for link in t.links:
+            out[f"{arm}/{link}"] = near
+    return out
+
+
+def _contact_poll(environment, control: bool = False) -> None:
+    """Fold the latest contacts into every watch and the finger sense: measured views every physics step (and once
+    after each control step), the proximity fallback once per control step."""
+    if not _ARMED["contacts"]:
+        return
+    c, step = _CONTACT, int(_CLOCK["steps"])
+    dt = _physics_dt(environment)
+    try:
+        for name, (view, pads, nf) in c["views"].items():
+            _touch_update(c["acc"][name], _TOUCHES[name], step,
+                          forces=_pad_forces(view.get_contact_force_matrix(dt=dt), pads, nf))
+        for arm, view in c["fingers"].items():
+            c["net"][arm] = _net_force(view.get_net_contact_forces(dt=dt))
+        if control and c["proximity"]:
+            from yam_arena.scene import object_states
+
+            faces = _arm_face_points(environment)
+            for name in sorted(c["proximity"]):
+                t = _TOUCHES[name]
+                part = object_states(environment, [t.target])[t.target]
+                _touch_update(c["acc"][name], t, step, hits=proximity_hits(faces, part, t))
+    except Exception as exc:  # noqa: BLE001 - one report, then the reads stop rather than lie
+        if c["error"] is None:
+            c["error"] = repr(exc)
+            print(f"mechkit: contact read failed ({exc!r}); contact watches stop updating", flush=True)
+        _ARMED["contacts"] = False
+
+
+def touch_state(name: str, arm: str | None = None) -> TouchState:
+    """What contact watch ``name`` (declared with watch_touch) saw since the last reset, over both arms or only
+    ``arm``. Scorer side (score() or an on_step hook); the closed-loop demo asks through ``ctx.touch_state``. With
+    no simulator it returns the mock_touch script (untouched unless set), with source "offline"."""
+    t = _touch(name)
+    c = _CONTACT
+    if c["live"] and name in c["acc"]:
+        return _touch_view(t, c["acc"][name], arm)
+    return _touch_view(t, _TOUCH_MOCK.get(name) or _new_touch_acc(t), arm)
+
+
+def finger_force(arm: str) -> float:
+    """The net normal contact force (N) on the ``arm`` arm's finger links at the latest reading: the larger of its two
+    fingers, from anything they touch. The robot's own fingertip contact sense (the YAM has no such sensor; say so in
+    the fidelity note). Needs watch_fingers() or a watch_touch(); nan when the simulator could not build the view.
+    Offline it returns the mock_finger_force script (0 unless set)."""
+    if arm not in ARM_ASSETS:
+        raise ValueError(f"finger_force: arm must be one of {tuple(ARM_ASSETS)}, got {arm!r}")
+    if not contacts_wanted():
+        raise RuntimeError("finger_force: declare watch_fingers() (or a watch_touch) at task import")
+    c = _CONTACT
+    if c["live"]:
+        return float(c["net"].get(arm, 0.0)) if c["fingers"] else float("nan")
+    return float(_FINGER_MOCK.get(arm, 0.0))
 
 
 # -- run time: indicator lamps ---------------------------------------------------------------------------------------------
@@ -2968,6 +3883,7 @@ def _run_step(environment) -> None:
     _CLOCK["steps"] += 1
     _CLOCK["seconds"] += float(getattr(environment.unwrapped, "step_dt", math.nan))
     _detent_step(environment)
+    _contact_poll(environment, control=True)
     for fn in list(_STEP_HOOKS):
         fn(environment)
 
