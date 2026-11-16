@@ -1,0 +1,20 @@
+{
+  "title": "Fold an extended wall mirror flat: carry its head round the way the elbow bends, glass squared first",
+  "category": "Societal relatability",
+  "keywords": [
+    "folding",
+    "passive linkage",
+    "wall mirror",
+    "hinge chain",
+    "bathroom"
+  ],
+  "instruction": "Fold the wall mirror away: both arm links back flat against the wall and the mirror parallel to it, then let go.",
+  "context": "Extendable shaving mirrors on two arm links hang over bathroom basins and are folded flat after use. The elbow is left bent one way by chance; pushed straight back, it jams on the tile, so the head must be carried round the way the elbow bends, glass squared first. Board tasks swing one hinge; this steers a passive two-hinge chain from its tip.",
+  "setup": "Positions in cm from the midpoint between the arm bases (x forward, y to the robot's left); heights above the counter (the wood table top). Wall: white glazed tile panel 44 x 24 cm, 2 cm thick, standing on the counter, face at x 32.5, centred on y 0, fixed; grout lines every 10 cm. Mirror, matt black brass, screwed to the tile: wall plate 8 cm across, 1.5 cm thick, 6.9 cm up; vertical shoulder hinge at x 29.5, y 0; link 1, 18 mm tube, 11 cm axis to axis, 90 g; elbow hinge 2.6 cm higher; link 2, 18 mm tube, 10 cm, 80 g; vertical swivel hinge; head: two-sided mirror 15 cm across, 2.5 cm bezel, silvered glass both faces, 0.45 kg, centre 9.5 cm up, 3 cm in front of the swivel axis. Hinge friction set with each hinge's screw and a spring scale pulled at right angles: link 1 moves at 2.3 N at the elbow (0.25 N m), link 2 at 1.5 N at the swivel (0.15 N m), the head at 1.3 N on the bezel side, 7.5 cm from the swivel axis (0.10 N m). Start (screenshot): link 1 60 deg to the robot's right of straight out (elbow x 24.0, y -9.5), elbow bent 17 deg further toward the wall (swivel axis x 21.8, y -19.3), glass turned 50 deg toward the robot's left from facing it (head centre x 19.8, y -17.0). Nothing else on the counter.",
+  "scoring": "Measured from the tile face after the robot has let go. Folded (F): elbow and swivel hinge axes each within 4.5 cm of the tile, and the swivel axis within 3 cm of the wall plate's centre along the wall. Parallel (P): the glass front, 6 cm either side of its centre on the horizontal diameter, is 6.2 to 9.2 cm from the tile at both points, the two within 1.5 cm of each other (7 deg). 1.0: F and P. 0.5: F only. 0 otherwise, including links jammed against the tile or laid straight along it. The whole trial scores 0 if any part of the head ever comes within 3 mm of the tile (a 3 mm feeler card on the tile, 20 fps video), or unless for the last 3 s the mirror is let go, no part of the robot is within 5 cm of the head and no hinge turns faster than 0.5 deg/s. Either mirror-image fold scores. Tools: tape measure, top photo, video.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Set the start pose from a card template on the counter: unfold by hand, bend the elbow 17 deg toward the wall (the same way every trial), then turn the head to the template's 50 deg mark. Recheck the three hinge frictions with the spring scale every 10 trials.",
+  "fidelity": "Rigid bodies. Mounted low (rim 2 cm above the counter) so the arm reaches the whole fold; all three hinges are vertical, so height does not change the fold. The head's tilt pivot is omitted; tilt turns about the horizontal diameter that scoring measures. Hinge friction is a Coulomb hold (0.25, 0.15, 0.10 N m) on vertical hinges gravity does not load. The sim scores without opening the grippers; a mirror still held scores 0.",
+  "scores": "Dream-1 run: 0.0 (left arm raised, right arm reached to the wall, mirror left unfolded); demo: 1.0 (right arm carried the mirror head round and folded it flat, then moved clear)",
+  "media": "M-M4TGN4"
+}
