@@ -1,0 +1,20 @@
+{
+  "title": "Plug a night light in through a sliding outlet cover: the blade tips carry the sprung door across, then push in",
+  "category": "Societal relatability",
+  "keywords": [
+    "outlet cover",
+    "childproofing",
+    "plug insertion",
+    "sprung sliding door",
+    "night light"
+  ],
+  "instruction": "Plug the night light into the top outlet through the sliding childproof cover, push it fully in, then let go.",
+  "context": "Sliding self-closing covers are the common childproofing plate in homes with toddlers, and parents plug night lights in through them; they retrofit receptacles that are not tamper-resistant. The plug opens the sprung door: tips 4 mm in carry it 16 mm across, then go in; ease back and it shuts. Board plug tasks are straight mates into open ports.",
+  "setup": "Positions in cm from the midpoint between the arm bases: x forward, y left; heights above the table. Full size. Wall: pale blue painted board 24 wide x 20 tall x 2.2 thick, face at x 34.5, y -12 to +12, on a 10 x 24 x 1.5 foot behind it. Unwired duplex receptacle: top outlet's slots 4.5 x 9.3 mm, 17 mm deep, at y -0.635 and +0.635, height 10.0. Cover: white ABS universal sliding cover plate 70 x 115 x 8 mm, rounded corners, front face at x 33.7, centred y 0, height 8.1; each outlet in a 60 x 30 x 5 mm recess with a dark grey rim. Top door: light grey ABS 42 x 24 x 4 mm, 6 g, slides along y on a spring (225 N/m, 0 N shut, 3.6 N open), 16 mm travel to its stop toward the right arm. Its two slots (5.5 x 10.3 mm, 12.7 mm apart) sit 1.8 cm left of the receptacle's centre when shut, over solid backing, the door's face over both receptacle slots; at the stop each door slot is 2 mm left of its receptacle slot. Night light: white plastic housing 45 wide x 65 tall x 28 deep, amber lens 41 x 60 x 2 mm on the front, 45 g; two nickel blades 15 x 1.5 x 6.3 mm on the back, 12.7 mm apart, 47 mm above its bottom. It stands centred on a fixed black rubber mat 90 x 75 x 3 mm at x 24.0, y -5.5, blades toward the wall (+x), lens toward the robot.",
+  "scoring": "From the light's pose and the door (ruler, side and top photos, video). d: depth of the shallower blade tip past the plate face (15 mm minus the exposed blade). C: at any time the door was 10 of its 16 mm open with both tips 0.5 mm or more into its slots (video, against a rim mark 10 mm right of the shut door's edge). End: light released (fingers 3 cm clear) and still 1 s, else 0. 1.0: both blades in their receptacle slots, d 13 mm or more, light square to the wall within 4 deg. 0.5: both in, d 9 mm or more, not 1.0. 0.25: C, and neither above. 0 otherwise: straight push (stops on the door, d about 1 mm), blades only in the shut door's slots (d 5 mm), still held, light left on the table without C. 0 for the run if the light ever falls off the table.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Pull the light straight out (the door snaps shut) and stand it centred on its mat, blades toward the wall. Nothing is consumed. The receptacle is unwired.",
+  "fidelity": "Approximate. Receptacle contacts are rigid blind slots: the plug is kept in by the door spring's side load and friction, not contact springs; no electricity. Door slots (2 mm a side) and receptacle slots (1.5 mm a side) are looser than real, easing yaw and height alignment. All parts rigid. The sim scores the last step without opening the grippers, so a light still held scores 0.",
+  "scores": "Dream-1 run: 0.0 (both arms stayed near their bases, light ended near the wall, unplugged); demo: 1.0 (right arm carried the light to the outlet, pushed it in, opened and backed away)",
+  "media": "M-Q3RKHB"
+}
