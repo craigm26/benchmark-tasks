@@ -1,0 +1,21 @@
+{
+  "title": "Temporal temperature on a manikin: scanner flush across the forehead to the hairline, then behind the ear",
+  "category": "Impact on jobs",
+  "keywords": [
+    "vital signs",
+    "temporal artery thermometer",
+    "contact sweep on a curved surface",
+    "tool kept square",
+    "manikin head"
+  ],
+  "instruction": "Take the temperature: scan mid-forehead across to the left hairline, then behind the left ear lobe; cradle the scanner.",
+  "context": "Medical assistants (O*NET 31-9092.00, 0.8M), nursing assistants (31-1131.00, 1.4M) and LPNs (29-2061.00, 0.6M) take vital signs every visit, often by temporal scanner: flush on mid-forehead, button held, slowly across to the hairline, then behind the ear lobe. Unlike ear-thermometer or wiping tasks, it scores path, angle and stop line on a curve.",
+  "setup": "Cm from the midpoint between the arm bases, x forward, y left; heights above the table. The manikin faces the robot, so its left is the robot's right (-y). Manikin bust, fixed: vinyl adult head and neck on navy-gowned shoulders (34 x 15 x 4.5 cm tall at x 36, y 0); neck 11 cm across at x 33.5. Head 16 cm wide, 19.5 cm deep (x 23 to 42.5), 23.8 cm chin to crown, chin 6 cm up; nose 2.1 cm proud; ears 6.8 x 2.8 cm, 11.8 to 18.6 cm up, back edge x 34.6. Brown hair above the front hairline (24.5 cm up) and from the temples (7 cm of arc from the midline) round the back, down to 18.5 cm. Scan line 21.5 cm up. Dot behind the left ear lobe: x 36.8, y -6.4, 13.5 cm up. Temporal artery scanner, off-white ABS, 15 cm, 80 g: handle 12.2 x 4 x 2.8 cm, head 3.2 to 2.5 cm across, grey probe cup 2.5 cm with a black lens 4 mm in; dark grey button 2 x 1.4 cm on one side, 4 mm proud, 2 N; red lamp and dark display on top. Cradle, charcoal ABS, fixed: base 15 x 6 x 2 cm at x 24, y -18; U saddles (3.4 cm inside, 4 mm walls, floors 4.5 cm up) at x 17.5 to 20 and 27 to 29. Scanner in them display up, probe toward the head, button facing -y, grip centre x 25, y -18, 6.5 cm up.",
+  "scoring": "On skin: cup rim flat on the skin (pressed in, within 2.5 mm) and probe within 15 deg of square. A scan is one continuous button press; its first on-skin touch must be within 1 cm of the forehead midline on the scan line. It is void if, on the forehead, the cup centre goes over 1.5 cm off the line or over 6.6 cm of arc from the midline (onto hair). Ten 5 mm bins from the midline toward the left temple count when the cup centre crosses them on skin, within 1 cm of the line, under 50 mm/s. Best valid scan: 0.6 x bins/10 (0 under 5 bins); +0.2 if its farthest on-skin cup centre is 5.1 to 6.1 cm along (rim on the hairline); +0.2 if, in the same press, the cup is on skin within 1.2 cm of the spot behind the ear for 0.5 s. Score 0 unless the scanner ends released and still in its saddles; 0 if it ever touches the table.",
+  "run_limit": "3,600 steps (3 minutes at 20 Hz)",
+  "reset_notes": "Before each trial wipe the forehead clean and redraw the dry-wipe band (2.5 cm tall, centred on the scan line, from the midline to past the temple hairline); put the scanner in its saddles, display up, probe toward the head.",
+  "fidelity": "Rigid vinyl head from a smooth profile (collider facets within 0.4 mm); the skin's give is a 4 mm sprung probe cup (1.6 N). No infrared reading: a valid scan is the scored path. The grip holds the button as long as it holds the scanner (the real scanner keeps the peak). The scan lamp is scorer-side; hair is look-only. The sim scores the last step without opening the grippers: a scanner still held, or off its saddles, scores 0.",
+  "scores": "Dream-1 run: no score (the model refused the instruction before acting, see no_model_video_reason); demo: 1.0 (right arm lifted scanner, swept forehead and ear, returned it to cradle, backed away)",
+  "no_model_video_reason": "Dream-1 was run through Inspect Robots on this task and refused the instruction before acting, so there is no recording: \"PolicyError: DreamAPI refused the inference request: DA-4000 BAD_REQUEST (malformed): unsafe instruction, refused: Scanning forehead and ear involves touching or coming forcefully near a person.\" (3 attempts on 2026-11-16, the last attempt with this error).",
+  "media": "M-XDGLW8"
+}
