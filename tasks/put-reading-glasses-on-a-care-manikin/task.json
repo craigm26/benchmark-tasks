@@ -1,0 +1,20 @@
+{
+  "title": "Put a resident's reading glasses on a care manikin: earpieces hooked behind both ears, pads on the nose",
+  "category": "Impact on jobs",
+  "keywords": [
+    "dressing and grooming",
+    "care manikin",
+    "fitting a hinged frame onto a head",
+    "bimanual",
+    "release"
+  ],
+  "instruction": "Put the reading glasses on the manikin: pads on the nose, both earpieces behind the ears, then let go.",
+  "context": "Nursing assistants (O*NET 31-1131.00, 1.4M; task statement: \"Help patients with daily activities such as dressing\") and home health and personal care aides (31-1122.00) put residents' glasses on in morning care: temples held near the hinges, slid over the ears, pads on the nose, never toward an eye. Unlike the board's manikin tasks (a finger clip, ear and forehead thermometers, eye drops), this fits a worn rigid item onto a head and leaves it there.",
+  "setup": "Cm from the midpoint between the arm bases, x forward, y left; heights above the table. Manikin head, fixed, rigid vinyl nursing-skills head on a grey stand (foot 15 cm across, neck 10 cm across), facing the robot, axis at x 34.5, y -7: skull 19 cm front to back, 14 cm across at the ears, chin 12.5 cm and crown 31 cm up. Nose ridge 5 mm wide from x 25.8 at 20.3 cm up to the tip at x 23.4, 15.8 cm up; flanks 40 deg off the midline. Closed lids, fronts at x 26.3, 3.2 cm either side, 19.3 cm up. Each ear: root x 32.4 to 34.6, 6.2 to 8.8 cm out, top 19.7 cm up, back face a wall; pinna 3.2 x 6.2 cm, 6 mm thick, inner face 8.7 cm out flaring back, top 21.2 cm up, 3.5 mm rim over the top and back. Overbed tray, fixed, light grey plastic, 17 x 17.5 x 3.8 cm, under the chin, x 12 to 29, y -15.75 to 1.75. Glasses, black acetate, 25 g (front 14 g, temples 5.5 g each), 14 cm across: lenses 5 x 3.2 cm x 2 mm, 5 mm rims; bridge 18 x 4 x 6 mm; pads 10 x 6 x 2 mm, 1.8 cm apart; hinges 13.6 cm apart; temples 9.8 cm x 4 x 8 mm, open stop 96 deg, then a 3.5 cm earpiece bent 75 deg down. Open on the tray on lens bottoms and earpiece tips, temples toward +x, hinges at x 14.7, centred at y -7.",
+  "scoring": "Score 0 for the run if any part of the glasses ever comes within 1 mm of an eyelid, or the glasses touch the table (the tray is part of the setup, so resting on it is not a touch). Otherwise scored after release, with both grippers 3 cm clear and the glasses still (under 3 mm/s and 3 deg/s) for the last 1 s, front up within 30 deg. Nose (0.4): both pads within 3 mm of the nose, bridge within 6 mm of the midline and within 8 mm of its mark. Each ear (+0.2, only with the nose): temple within 10 deg of its open stop, underside 0 to 4 mm over the ear root top, bend 6 mm in front of to 15 mm behind the root's back edge, earpiece tip 5 mm or more below the root top and 7.2 to 8.6 cm out from the head axis. Fit (+0.2, with nose and both ears): roll and yaw within 4 deg, lenses 6 mm or more from the lids. 0 otherwise: still held, on the forehead, upside down, untouched.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Wipe the lids and re-ink them (any ink on the frame afterwards is a lid touch). Fold nothing: set the glasses open on the tray at their marks, temples on their open stops.",
+  "fidelity": "Rigid frame and head (training heads are hard vinyl). Temples 4 x 8 mm, thicker than real; a 6 deg splay at the open stop stands in for temples flexing round the head; earpieces are rigid 75 deg bends. Hinges have 0.004 N m friction. Pads rigid, friction 0.9. The lid rule is a 1 mm gap, a conservative proxy for ink contact. The sim scores the last step without opening the grippers: glasses still held score 0.",
+  "scores": "Dream-1 run: 0.0 (reached toward the head and tray, left the glasses on the tray); demo: 1.0 (lifted the glasses off the tray, fitted them on the head, opened grippers and withdrew)",
+  "media": "M-NDJRTX"
+}
