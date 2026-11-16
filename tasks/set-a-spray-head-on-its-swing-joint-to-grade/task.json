@@ -1,0 +1,20 @@
+{
+  "title": "Set a pop-up spray head on its three-elbow swing joint: over the stake, plumb, its top flush with grade",
+  "category": "Impact on jobs",
+  "keywords": [
+    "irrigation",
+    "swing joint",
+    "passive linkage",
+    "set to grade",
+    "plumb"
+  ],
+  "instruction": "Set the spray head over the orange stake mark, standing plumb with its top flush with the grade boards, then let go.",
+  "context": "Landscaping and groundskeeping workers (O*NET 37-3011.00, about 1.0M US) \"install ... irrigation systems\". Every head on every new zone sits on a swing joint, turned until it stands plumb over its stake, flush with grade. Board tasks fold a two-hinge arm to its stops; this sets three non-parallel, gravity-loaded swivels to a mid-travel pose fixed by grade and stake, holding the body plumb on a 152 mm arc.",
+  "setup": "Positions in cm from the midpoint between the arm bases (x forward, y left); h above the table top. Trench, fixed, open toward the robot and at its y -15 end, y -15 to +20: sand floor 0.3 cm, x 21.5 to 36.2; far soil bank x 36.2 to 42.0, 23.8 cm tall; pine grade boards 3.8 x 1.9 cm, tops at grade (h 25.68), one on the bank (x 36.2 to 40.0), one on two 1.9 cm pine stakes (x 17.7 to 21.5); a 2.5 cm orange stripe across both boards at y -9.77; a 1.9 cm pine stake, orange top, on the bank at x 41.0, y -9.77, 4 cm above grade. Lateral: white 3/4 inch PVC, 26.7 mm OD, along y at x 25.5, h 1.84; tee 33 mm, side outlet to +x. Swing joint, grey PE, 1/2 inch: elbow 1 on the outlet swivels about x (axis x 28.5, y 0, h 1.84); 21.3 mm nipple, 15.2 cm centre to centre, to elbow 2, which swivels about the nipple; its outlet points +y, 3.2 cm to elbow 3, which swivels about it and carries the head; 30, 12 and 12 g. Head: black ABS pop-up body 46 mm OD, 10.2 cm tall, pale grey 56 mm cap, 90 g; cap top 12.2 cm above elbow 3. Start: nipple upright, elbow 2 along +y, head plumb at x 28.5, y 3.2, 3.56 cm proud. Swivels turn in steps: elbows 1 and 3 every 1 deg, elbow 2 every 2 deg (0.35, 0.10, 0.10 N m a step).",
+  "scoring": "Measured after the robot lets go. h: cap top centre minus grade (straightedge across both boards, rule). Tilt: body axis from vertical (torpedo level). c: plan distance from the cap centre to the mark, x 31.7, y -9.77 (tape from the stake). 1.0: |h| 3 mm or less, tilt 3 deg or less, c 10 mm or less. 0.5: c 10 mm or less, tilt 3 deg or less, |h| 3 to 6 mm. 0.25: c 20 mm or less, tilt 6 deg or less, |h| 10 mm or less. 0 otherwise: the start (h +35.6 mm), head pushed straight down (tilt 40 deg), lowered halfway, nipple laid the other way (c 195 mm), elbow 2 swung to the front (c 64 mm). The trial scores 0 if a finger pad ever touches the freshly glued lateral or tee (video), or unless at the end the head is let go (every pad 3 cm or more from the swing joint) and no swivel turns more than 0.5 deg in the last 1 s.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Turn the three swivels back to the start by hand: nipple upright (level on its side), elbow 2 along the trench toward the robot's left, head plumb. Check the cap top reads 35.6 mm above the straightedge.",
+  "fidelity": "Rigid bodies. Real swivels hold by thread and O-ring friction; here each is a hinge with detent springs (steps of 1, 2 and 1 deg, about 0.35, 0.10, 0.10 N m), as a friction hold creeps under gravity in this simulator. The lateral and tee are fixed; no backfill, water or pop-up stem. The sim scores without opening the grippers: a head still held, or held in the air, scores 0. Trench walls shortened to 35 cm.",
+  "scores": "Dream-1 run: 0.0 (right arm hovered over the boards, left arm moved beside the head without setting it); demo: 1.0 (right arm gripped the head, turned it over the stake, let go and backed off)",
+  "media": "M-WT7RYB"
+}
