@@ -1,7 +1,8 @@
 """On the station table: a compact push-bar wall soap dispenser (125 x 148 x 271 mm) screwed to a splashback board at
 table height, its cover hanging open on its stop. A spent 600 mL refill sits in it, pump down: the bottle rests on a
 ledge, its 28 mm neck at the end of a 34 mm slot and its 38 mm pump collar under the ledge, 1 mm over the push
-lever's fork. A full refill (0.66 kg) stands on a cradle to the robot's right; a waste bin stands to its left.
+lever's fork; a drip tray stands on the table under it. A full refill (0.66 kg) stands on a cradle to the robot's
+right; a waste bin stands to its left.
 
 The job: draw the spent refill forward to the 44 mm keyhole entrance, lift it out and bin it; lower the new refill
 until its collar drops through the entrance, slide it 43 mm back to the slot end, shut the cover, push the bar once.
@@ -93,7 +94,16 @@ SIDE_WALLS = [
 ]
 TILE_LINES = [_look(_dbox(0.4045, 0.405, -0.20, 0.20, z - 0.001, z + 0.001, WHITE)) for z in (0.12, 0.24)] + [
     _look(_dbox(0.4045, 0.405, y - 0.001, y + 0.001, 0.0, 0.36, WHITE)) for y in (-0.13, 0.13)]
-BODY_SHAPES = [BOARD, BACK_PLATE, *SIDE_WALLS, *LEDGE_STRIPS]
+# Drip tray on the table under the dispenser: 120 x 100 x 15 mm, 2 mm walls, catches soap from the nozzle in a real trial.
+TRAY_X, TRAY_Y, TRAY_H, TRAY_T = (0.270, 0.390), 0.050, 0.015, 0.002
+DRIP_TRAY = [
+    _dbox(TRAY_X[0], TRAY_X[1], -TRAY_Y, TRAY_Y, 0.0, TRAY_T, WHITE),
+    _dbox(TRAY_X[0], TRAY_X[0] + TRAY_T, -TRAY_Y, TRAY_Y, TRAY_T, TRAY_H, WHITE),
+    _dbox(TRAY_X[1] - TRAY_T, TRAY_X[1], -TRAY_Y, TRAY_Y, TRAY_T, TRAY_H, WHITE),
+    _dbox(TRAY_X[0] + TRAY_T, TRAY_X[1] - TRAY_T, TRAY_Y - TRAY_T, TRAY_Y, TRAY_T, TRAY_H, WHITE),
+    _dbox(TRAY_X[0] + TRAY_T, TRAY_X[1] - TRAY_T, -TRAY_Y, -TRAY_Y + TRAY_T, TRAY_T, TRAY_H, WHITE),
+]
+BODY_SHAPES = [BOARD, BACK_PLATE, *SIDE_WALLS, *LEDGE_STRIPS, *DRIP_TRAY]
 
 # The cover, written in its shut pose relative to the hinge line, then turned 60 degrees forward: joint 0 is open.
 _A = -COVER_SHUT
