@@ -6,11 +6,12 @@ roll without crushing paper, and people hook their fingers into the cardboard co
 straight up. This gripper has the same problem twice over: a 114 mm roll is 20 mm wider than its 94 mm opening. So
 the robot must put its closed fingers about 2 cm into the 42 mm core, open them until their backs bear on the core wall,
 lift the roll square out from between two walls and two touching rolls, carry it hanging on two contact patches and
-stand it in the cart bin. A roll that drags a neighbour up or over on the way out scores 0.
+stand it in the cart bin, leaving the other three standing in the case. A neighbour that rises or rocks on the way and
+settles back standing costs nothing; a neighbour left lying, leaning or propped up lowers the score, and a second
+roll taken out scores 0.
 
 This is not the packed-shelf book task: that one makes an outside grasp by tipping the book out first. Here there is
-no pre-grasp and no outside grasp at all; the grip is an expansion inside a bore, and tipping is what the V rule
-scores 0.
+no pre-grasp and no outside grasp at all; the grip is an expansion inside a bore.
 
 ## Parts (real size, real shape)
 
@@ -66,7 +67,9 @@ rolls stand touching, slightly squeezed, so real drag on a neighbour is if anyth
 gap gives. Rolls are unwrapped. The case and the bin are fixed, as if taped to the table. The case is one layer deep
 because the arm reaches only 22 cm above the table pointing straight down and 26 cm leaned 9 degrees: the roll's
 foot clears the 10.7 cm rim by 12 mm at the top of the lift. The simulator scores the last step without opening the grippers, so a roll still
-held, in the air or within 3 cm of a gripper scores 0. Speeds are read frame to frame at 20 Hz, as from video.
+held, in the air or within 3 cm of a gripper scores 0. Speeds are read frame to frame at 20 Hz, as from video. A rigid
+roll cannot dent or unwind, so the simulator reads a displaced roll (N) from its final pose alone; the dent and
+unwound-paper limits apply to real trials.
 
 ## Files
 
@@ -96,42 +99,50 @@ inspect-robots run --embodiment yam_arena --policy yam_scripted \
   --max-steps 2400 --store-frames --log-dir ~/yam-eval/roll-demo
 ```
 
-- **Seed and layout:** `-E object_jitter=0` is required: the rolls are packed to 1 mm and the scorer measures each
-  roll's rise from where it starts.
+- **Seed and layout:** `-E object_jitter=0` is required: the rolls are packed to 1 mm, and the demo's lift has no room for a
+  shifted roll.
 - **Runtime per trial:** the demo needs about 32 s of simulated time (636 steps); a Dream-1 trial runs up to 2,400
-  steps (2 minutes simulated), about 3.3 times the demo. Wall-clock time on one L40S, including Isaac Sim start-up: about 140 s for the demo and about 400 s for a full Dream-1 trial.
+  steps (2 minutes simulated), about 3.3 times the demo. Wall-clock time on one L40S, including Isaac Sim start-up: about 130 s for the demo and about 370 s for a full Dream-1 trial.
 - **Score:** `task_score` reports 1.0 when `success()` has held for 8 s (the roll released and standing still in the
   bin), otherwise `score()` at the end of the run.
 
 ## Scoring
 
-Latched over the whole run, from 20 fps video (overhead and a side view), a pencil line on each roll at the rim, a
-protractor and a tape. Baselines are read 0.5 s after the start.
+Read at the end of the run, from the last frames of the video (overhead and a side view) with a tape and a
+protractor. Both grippers must be 3 cm or more from every roll and every roll still (under 5 mm/s for 2 s);
+otherwise the score is 0. Only D looks at the whole run.
 
-- **R, taken:** the first roll whose foot rises above the case rim.
-- **V, a neighbour disturbed (score 0):** any roll other than the R roll ever rises more than 5 mm or tilts more than
-  10 degrees, or a second roll's foot rises above the rim. It catches a hooked or dragged neighbour and a second
-  roll taken; trying one roll, giving up and taking another is V as well. In the demo's contact replay the three
-  neighbours' peak rise was 0.0 mm and peak tilt 0.0 degrees, and roll_a's own peak tilt was 0.9 degrees. A lift that
-  is not square fails before V does: with the hand pulled 5 mm sideways, or 10 mm diagonally, on the way up, the roll
-  tilted 3 to 4 degrees against its neighbours, the demo's tilt check stopped the lift 16 to 26 mm up, the roll
-  never came out (score 0) and the neighbours rose 0.5 mm.
-- **D, dropped or flung:** the R roll's centre ever faster than 0.5 m/s, which is 2.5 cm between two frames. The
-  demo's 3 mm release reaches about 0.24 m/s; a fall from 2 cm or more does not pass.
+- **Out of the case:** a roll whose centre, seen from above, is outside the case's inner walls. Exactly one roll must
+  be out. None out (nothing taken, or the roll put back) scores 0; two or more out (a second roll removed) scores 0.
+- **R:** the one roll that is out.
+- **N, a roll left displaced in the case:** any of the three rolls still in the case ends more than 15 degrees from
+  upright (lying or leaning), or with its lowest point more than 6 mm above the case floor (propped on a wall, on
+  another roll or on its own edge). N lowers the score one row: 1.0 to 0.5, 0.5 to 0.25, 0.25 to 0. A roll that
+  slid sideways into the emptied place and stands on the case floor is not displaced: loose rolls in an opened case
+  shift, and nothing is harmed. In a real trial N also covers a damaged roll: a dent deeper than 5 mm (straightedge
+  across the dent and a ruler) or more than 10 cm of paper unwound on any roll left in the case.
+- **D, dropped or flung:** the R roll's centre ever faster than 0.5 m/s, which is 2.5 cm between two frames of 20 fps
+  video. The demo's 3 mm release reaches about 0.24 m/s; a fall from 2 cm or more does not pass.
 
-At the end both grippers must be 3 cm or more from every roll and every roll still (under 5 mm/s for 2 s).
-
-| Score | Outcome |
+| Score | Outcome for the R roll (before N) |
 |---|---|
-| 1.0 | the R roll in the bin (centre inside the inner walls, lowest point within 6 mm of the bin floor), within 15 degrees of upright, no D |
+| 1.0 | in the bin (centre inside the inner walls, lowest point within 6 mm of the bin floor), within 15 degrees of upright, no D |
 | 0.5 | in the bin lying or leaning over, or in the bin after D |
-| 0.25 | at rest on the bare table (lowest point within 6 mm of it, centre outside the case and the bin): taken out cleanly, not delivered |
-| 0 | nothing taken out, V, still held, in the air, back in the case, perched on the bin rim or on the other rolls, off the table |
+| 0.25 | at rest on the bare table (lowest point within 6 mm of it, centre outside the case and the bin): taken out, not delivered |
+| 0 | none or two or more rolls out of the case, still held, in the air, perched on the case wall or the bin rim, off the table |
+
+What the other rolls do on the way is not scored. A neighbour that rises 6 mm with the roll, rocks 11 degrees, or
+is lifted and set back, and comes to rest standing on the case floor, leaves the score as it is: the rolls are
+unharmed and the case is as a person would leave it. Lifting one roll clear, standing it back and taking another is
+scored the same way, by where every roll ends. The penalty is for what is left behind: a second roll out of the case
+(0), or a roll left lying, leaning, propped up or damaged in it (one row lower).
 
 A roll put back in the case scores 0, not 0.25: nothing was restocked. Pushing or sweeping cannot take a roll out
-(the walls are as tall as the rolls), and knocking the case about trips V. The offline checker scores over 25 synthetic
-runs covering each row, each latch and the borderline cases (a neighbour lifted 4 mm passes, 6 mm fails; 14 degrees
-in the bin is upright, 20 is not).
+(the walls are as tall as the rolls). In the demo's contact replay the three neighbours moved under 0.5 mm and
+roll_a's own peak tilt was 0.9 degrees. The offline checker scores about 40 synthetic runs covering each row, the D
+latch, N at each row and the borderline cases (a neighbour up 6 mm or over 11 degrees on the way, ending standing:
+1.0; a neighbour left leaning 14 degrees: 1.0, 20 degrees: 0.5; left 5 mm off the case floor: 1.0, 8 mm: 0.5; 14
+degrees in the bin is upright, 20 is not).
 
 ## Real-world reset
 

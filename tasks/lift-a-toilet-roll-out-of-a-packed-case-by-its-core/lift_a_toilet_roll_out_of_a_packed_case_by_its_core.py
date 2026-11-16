@@ -4,7 +4,7 @@ Between the case and the robot stands an empty charcoal plastic bin. The rolls a
 fixed. A roll is 114 mm across, wider than the 94 mm the gripper opens, and no finger fits down its side: it comes
 out by its 42 mm core.
 
-Requires -E object_jitter=0: the rolls are packed to 1 mm and the scorer measures from the starting layout.
+Requires -E object_jitter=0: the rolls are packed to 1 mm and the demo starts from this exact layout.
 
 Run it:  inspect-robots run --embodiment yam_arena -E task=lift_a_toilet_roll_out_of_a_packed_case_by_its_core.py \\
            -E object_jitter=0 --instruction "Take one toilet roll out of the case and stand it upright in the grey
@@ -102,22 +102,24 @@ BIN = Mech("bin", pos=(float(BIN_XY[0]), float(BIN_XY[1]), float(TOP)), mass=Non
 OBJECTS = [CASE, BIN, *ROLLS]
 
 # ---- scoring ----------------------------------------------------------------------------------------------------------
+# Everything about the other rolls is read at the end of the run: a roll that rises or rocks on the way and comes to
+# rest standing in the case costs nothing. Only the dropped-or-flung latch D looks at the whole run.
 STEP_HZ = 20.0
-SETTLE_STEPS = 10  # baselines are read after 0.5 s
-V_RISE, V_TILT = 0.005, 10.0  # another roll lifted 5 mm or tipped 10 degrees: V
-DROP_SPEED = 0.5  # m/s: D, the taken roll's centre faster than this (2.5 cm between two frames at 20 Hz)
+SETTLE_STEPS = 10  # speeds are read from 0.5 s after the start
+DROP_SPEED = 0.5  # m/s: D, a roll's centre faster than this (2.5 cm between two frames at 20 Hz)
 REST_SPEED, REST_STEPS = 0.005, 40  # every roll under 5 mm/s for 2 s
 RELEASE_CLEAR = 0.03  # every finger point this far from every roll
 SEAT_GAP = 0.006  # resting: lowest point within this of the surface under it
 UPRIGHT = 15.0  # degrees from vertical
+LOWER = {1.0: 0.5, 0.5: 0.25, 0.25: 0.0}  # N: a roll left displaced in the case lowers the score one row
 OFFLINE_FINGERS_CLEAR = True  # what the release test returns with no simulator (the checker flips it for a held roll)
 
-_L = {"n": 0, "base": None, "taken": None, "rise": {}, "tilt": {}, "v": False, "dropped": False, "still": 0, "seen": None, "last": None}
+_L = {"n": 0, "dropped": set(), "still": 0, "seen": None, "last": None}
 
 
 @on_reset
 def _clear(_env=None):
-    _L.update(n=0, base=None, taken=None, rise={}, tilt={}, v=False, dropped=False, still=0, seen=None, last=None)
+    _L.update(n=0, dropped=set(), still=0, seen=None, last=None)
 
 
 def _fingers_clear(objects) -> bool:
@@ -141,33 +143,27 @@ def _update(objects) -> None:
     _L["seen"] = objects
     last, _L["last"] = _L["last"], here
     _L["n"] += 1
-    if _L["base"] is None:
-        if _L["n"] >= SETTLE_STEPS:
-            _L["base"] = {r.name: float(here[r.name][2]) for r in ROLLS}
+    if last is None or _L["n"] <= SETTLE_STEPS:
         return
-    for r in ROLLS:  # R: a roll's lowest point above the rim of the case
-        if bottom(objects[r.name], r) > TOP + RIM:
-            if _L["taken"] is None:
-                _L["taken"] = r.name
-            elif _L["taken"] != r.name:
-                _L["v"] = True  # a second roll came out
-    for r in ROLLS:  # each roll's highest rise and steepest tilt since the baseline
-        _L["rise"][r.name] = max(_L["rise"].get(r.name, 0.0), float(here[r.name][2]) - _L["base"][r.name])
-        _L["tilt"][r.name] = max(_L["tilt"].get(r.name, 0.0), tilt_deg(objects[r.name]))
     steps = {n: float(np.linalg.norm(here[n] - last[n])) for n in here}
-    if _L["taken"] and steps[_L["taken"]] * STEP_HZ > DROP_SPEED:
-        _L["dropped"] = True
+    _L["dropped"] |= {n for n, d in steps.items() if d * STEP_HZ > DROP_SPEED}  # D, kept per roll
     _L["still"] = _L["still"] + 1 if max(steps.values()) * STEP_HZ < REST_SPEED else 0
-
-
-def disturbed() -> bool:
-    """V: a second roll came out, or any roll but the one taken ever rose 5 mm or tipped 10 degrees."""
-    return bool(_L["v"] or any(_L["rise"].get(r.name, 0.0) > V_RISE or _L["tilt"].get(r.name, 0.0) > V_TILT
-                               for r in ROLLS if r.name != _L["taken"]))
 
 
 def _over(state, xy, half) -> bool:
     return bool(abs(state.pos[0] - xy[0]) < half and abs(state.pos[1] - xy[1]) < half)
+
+
+def out_of_case(state) -> bool:
+    """Centre outside the case's inner walls, seen from above."""
+    return not _over(state, CASE_XY, CASE_IN / 2)
+
+
+def standing_in_case(state, spec) -> bool:
+    """Centre inside the case's inner walls, lowest point within 6 mm of the case floor, within 15 degrees of
+    upright. A roll that slid sideways into the emptied place still stands in the case."""
+    return bool(_over(state, CASE_XY, CASE_IN / 2) and abs(bottom(state, spec) - (TOP + CASE_FLOOR)) <= SEAT_GAP
+                and tilt_deg(state) <= UPRIGHT)
 
 
 def in_bin(state, spec) -> bool:
@@ -183,19 +179,27 @@ def on_table(state, spec) -> bool:
 
 
 def score(objects):
-    """0 if any roll but the first one out rose 5 mm or tipped 10 degrees, or a second roll came out (V). Otherwise,
-    once the fingers are 3 cm clear of every roll and the rolls are still: 1.0 with the roll that came out standing
-    upright in the bin and never faster than 0.5 m/s; 0.5 in the bin but lying or leaning over, or after moving faster
-    than 0.5 m/s; 0.25 at rest on the table. Else 0."""
+    """Read at the end, once the fingers are 3 cm clear of every roll and the rolls are still. 0 unless exactly one
+    roll has its centre outside the case's inner walls. For that roll: 1.0 standing upright in the bin and never
+    faster than 0.5 m/s; 0.5 in the bin but lying or leaning over, or after moving faster than 0.5 m/s; 0.25 at rest
+    on the table; else 0. One row lower (1.0 to 0.5, 0.5 to 0.25, 0.25 to 0) if any of the three rolls left in the
+    case is not standing on the case floor within 15 degrees of upright. What the other rolls did on the way is not
+    scored."""
     _update(objects)
-    if _L["taken"] is None or disturbed():
-        return 0.0
     if not (_L["still"] >= REST_STEPS and _fingers_clear(objects)):
         return 0.0
-    s, spec = objects[_L["taken"]], SPEC[_L["taken"]]
+    out = [r for r in ROLLS if out_of_case(objects[r.name])]
+    if len(out) != 1:
+        return 0.0  # nothing taken out, or a second roll taken out
+    s, spec = objects[out[0].name], out[0]
     if in_bin(s, spec):
-        return 1.0 if (tilt_deg(s) <= UPRIGHT and not _L["dropped"]) else 0.5
-    return 0.25 if on_table(s, spec) else 0.0
+        base = 1.0 if (tilt_deg(s) <= UPRIGHT and spec.name not in _L["dropped"]) else 0.5
+    elif on_table(s, spec):
+        base = 0.25
+    else:
+        return 0.0
+    left_standing = all(standing_in_case(objects[r.name], r) for r in ROLLS if r is not out[0])
+    return base if left_standing else LOWER[base]
 
 
 def success(objects):
@@ -204,7 +208,7 @@ def success(objects):
 
 # ---- the robot keeps off the other rolls ------------------------------------------------------------------------------
 # Over the three rolls that stay, no link origin and no point tracked along the links of either arm comes lower than
-# 3 cm above the rim: the hand works in roll_a's core and never presses on or hooks a neighbour.
+# 3 cm above the rim: the demo's hand works in roll_a's core and never presses on or hooks a neighbour.
 KEEP_OFF_Z = RIM + 0.030
 _CASE_X = (CASE_XY[0] - CASE_OUT / 2, CASE_XY[0] + CASE_OUT / 2)
 _CASE_Y = (CASE_XY[1] - CASE_OUT / 2, CASE_XY[1] + CASE_OUT / 2)
