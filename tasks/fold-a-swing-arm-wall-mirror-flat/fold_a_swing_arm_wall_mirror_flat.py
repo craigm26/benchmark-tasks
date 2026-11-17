@@ -1,8 +1,9 @@
 """On the station table (the vanity counter): a white glazed tile panel stands across the far side of the counter, its
-face at x 0.325, and an extendable shaving mirror is screwed to it on a round black wall plate. The mirror hangs on two
+face at x 0.325, and an extendable shaving mirror is fixed to it on a round black wall plate. The mirror hangs on two
 black arm links (110 and 100 mm, 18 mm tube) joined by vertical hinges at the wall, the elbow and the head, and its
-round two-sided head (150 mm across, 25 mm thick bezel, silver glass on both faces) is swung out over the counter to
-the robot's right, the elbow bent 17 degrees toward the wall side and the glass turned 50 degrees from facing the robot.
+round head (150 mm across, 25 mm thick bezel, a silver mirror on the face away from the swivel) is swung out over the
+counter to the robot's right, the elbow bent 17 degrees toward the wall side and the glass turned 50 degrees to the
+robot's right from facing it. The parts are the printed reference build fabricate.py writes (README: parts list, assembly).
 
 The task: fold the mirror away flat, both links back against the wall and the glass parallel to it, then let go.
 Pushed straight back, the elbow jams link 2 and the head against the tile; the fold that works carries the head round
@@ -39,7 +40,7 @@ CONTROL_DT = 0.05  # s per control step (-E control_hz=20)
 TILE = (0.93, 0.93, 0.91)
 GROUT = (0.60, 0.60, 0.58)
 BLACK = (0.12, 0.12, 0.13)  # matt black brass
-GLASS = (0.86, 0.89, 0.93)  # silvered glass
+GLASS = (0.86, 0.89, 0.93)  # silver acrylic mirror
 CHROME = (0.78, 0.79, 0.80)
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -52,12 +53,13 @@ Z_ELBOW = TOP + 0.095  # link 2 and head centre height (elbow hinge 26 mm above 
 L1, L2 = 0.110, 0.100  # link lengths, axis to axis
 NECK = 0.030  # swivel pivot to head centre, along the glass normal
 HEAD_R, BEZEL_T = 0.075, 0.025
-GLASS_R, GLASS_T = 0.068, 0.0262  # glass 0.6 mm proud of each bezel face
+GLASS_R, GLASS_T = 0.068, 0.0262  # head 26.2 mm thick: mirror 0.6 mm proud in front, a 0.6 mm back step behind
 HALF_T = GLASS_T / 2
 # Relative hinge angles (0 = link straight out at the robot, i.e. along -x; each measured from the link before).
-START = (60.0, 17.0, -127.0)  # shoulder, elbow, swivel at the start
+START = (60.0, 17.0, -27.0)  # shoulder, elbow, swivel at the start (glass turned 50 deg to the robot's right)
 FOLDED = (-90.0, 178.0, -88.0)  # the fold the demo makes (the mirror image, +90 / -178 / +88, scores the same)
-STOPS = {"shoulder": (-90.0, 90.0), "elbow": (-178.0, 178.0), "swivel": (-150.0, 150.0)}
+STOPS = {"shoulder": (-90.0, 90.0), "elbow": (-178.0, 178.0), "swivel": (-95.0, 95.0)}  # swivel: the neck bar meets the boss web (bezel 2 mm off link 2)
+PIN_R = 0.086  # elbow stop: 3 mm pins 86 mm from the elbow axis on link 1 (top) and link 2 (underside) meet at +-178
 HOLDS = {"shoulder": 0.25, "elbow": 0.15, "swivel": 0.10}  # N m, Coulomb friction in each vertical hinge
 
 
@@ -107,23 +109,29 @@ _N0 = S0["normal"]  # 130 deg at the start
 _LINK1 = [
     rod((0.0, 0.0, 0.0), _p3(_E_REL), 0.009, BLACK, sides=16),  # 18 mm tube
     cyl(_p3(_E_REL, 0.013), 0.010, 0.052, BLACK, sides=16),  # elbow knuckle, 20 mm, up to the elbow hinge
+    cyl(_p3(_E_REL * (1.0 - PIN_R / L1), 0.012), 0.0015, 0.006, CHROME, sides=12),  # elbow stop pin A (look only)
 ]
 _LINK2 = [
     rod((0.0, 0.0, 0.0), _p3(_P_REL), 0.009, BLACK, sides=16),
     cyl(_p3(_P_REL), 0.011, 0.018, BLACK, sides=16),  # swivel boss, 18 mm tall: clears the base knuckle by 4 mm when folded
+    cyl(_p3(_P_REL * (PIN_R / L2), -0.012), 0.0015, 0.006, CHROME, sides=12),  # elbow stop pin B (look only)
 ]
 _NU = _u(_N0)
 _HEAD = [
     rod((0.0, 0.0, 0.0), _p3(_NU * (NECK - BEZEL_T / 2)), 0.007, BLACK, sides=12),  # neck, pivot to the bezel's back
     cyl(_p3(_NU * NECK), HEAD_R, BEZEL_T, BLACK, axis="x", tilt=_zq(_N0), sides=32),  # bezel, matt black brass
-    cyl(_p3(_NU * NECK), GLASS_R, GLASS_T, GLASS, axis="x", tilt=_zq(_N0)),  # glass, both faces
+    cyl(_p3(_NU * (NECK + BEZEL_T / 2 + 0.0006 - 0.0015)), GLASS_R, 0.003, GLASS, axis="x", tilt=_zq(_N0)),  # mirror, front face
     tube(_p3(_NU * NECK), GLASS_R, 0.0705, 0.0258, CHROME, axis="x", tilt=_zq(_N0)),  # chrome trim ring
 ]
+_LINK1[2] = mechkit.dataclasses.replace(_LINK1[2], collide=False)
+_LINK2[2] = mechkit.dataclasses.replace(_LINK2[2], collide=False)
 _HEAD[2] = mechkit.dataclasses.replace(_HEAD[2], collide=False)
 _HEAD[3] = mechkit.dataclasses.replace(_HEAD[3], collide=False)
 _BASE = [
     cyl((TILE_X - 0.0075 - SHOULDER[0], 0.0, 0.0), 0.040, 0.015, BLACK, axis="x", sides=24),  # wall plate, 80 mm, on the tile
     box((0.012, 0.0, 0.0), (0.016, 0.020, 0.026), BLACK),  # bracket, plate to knuckle
+    box((0.012, 0.016, 0.0), (0.006, 0.008, 0.018), BLACK),  # shoulder stop cheeks: link 1's flank lands on them at +-90
+    box((0.012, -0.016, 0.0), (0.006, 0.008, 0.018), BLACK),
     cyl((0.0, 0.0, 0.0), 0.011, 0.026, BLACK, sides=16),  # shoulder knuckle
 ]
 
@@ -136,10 +144,10 @@ MIRROR = Mech(
     "mirror", pos=(float(SHOULDER[0]), float(SHOULDER[1]), float(Z_SHOULDER)), mass=None, friction=0.8, shapes=_BASE,
     joints=[
         Joint("shoulder", "hinge", axis="z", at=(0.0, 0.0, 0.0), low=_kit("shoulder", STOPS["shoulder"][0]),
-              high=_kit("shoulder", STOPS["shoulder"][1]), mass=0.09, hold=HOLDS["shoulder"], damping=0.02,
+              high=_kit("shoulder", STOPS["shoulder"][1]), mass=0.05, hold=HOLDS["shoulder"], damping=0.02,
               shapes=_LINK1),
         Joint("elbow", "hinge", axis="z", at=_p3(_E_REL, Z_ELBOW - Z_SHOULDER), low=_kit("elbow", STOPS["elbow"][0]),
-              high=_kit("elbow", STOPS["elbow"][1]), mass=0.08, hold=HOLDS["elbow"], damping=0.02, parent="shoulder",
+              high=_kit("elbow", STOPS["elbow"][1]), mass=0.045, hold=HOLDS["elbow"], damping=0.02, parent="shoulder",
               shapes=_LINK2),
         Joint("swivel", "hinge", axis="z", at=_p3(_P_REL), low=_kit("swivel", STOPS["swivel"][0]),
               high=_kit("swivel", STOPS["swivel"][1]), mass=0.45, hold=HOLDS["swivel"], damping=0.02, parent="elbow",
@@ -201,7 +209,7 @@ def head_front_x(h) -> float:
 
 def glass_points(h) -> tuple[float, float]:
     """Distances from the tile (m) of the glass front 60 mm either side of centre on the horizontal diameter. The front
-    is the face toward the robot (away from the tile), either side of the two-sided head."""
+    is the face toward the robot (away from the tile); in both folds that is the mirror face."""
     n = h["normal"].copy()
     if n[0] > 0:
         n = -n
@@ -320,7 +328,7 @@ ARM_KEEP_OUT = [
 # from them the head's pose, to correct its path.
 demo = placeholder_demo
 TCP_Z = TOP + 0.150  # grasp: TCP 20 mm below the top of the bezel's rim, pads across the 25 mm bezel
-HOVER_Z = TOP + 0.190
+HOVER_Z = TOP + 0.185
 OPEN45 = -0.0225  # one finger joint for a 45 mm pad gap
 SQUARE_S, SWING_S, FOLD_S = 3.0, 11.0, 3.5  # seconds for each leg
 SWING_PATH = [tuple(S0["pivot"]), (0.212, -0.150), (0.205, -0.100), (0.203, -0.050), (0.210, -0.005),
@@ -343,14 +351,20 @@ def _catmull(pts, s: float) -> np.ndarray:
     return 0.5 * ((2 * b) + (-a + c) * u + (2 * a - 5 * b + 4 * c - d) * u * u + (-a + 3 * b - 3 * c + d) * u ** 3)
 
 
+SWIVEL_KEEP = -88.0  # deg: the swing keeps the swivel this far from link 2 (a real bezel meets link 2's tube at -97)
+
+
 def swing_pose(s: float) -> tuple[np.ndarray, float]:
-    """Head centre and glass normal (deg) along the swing, glass kept facing the robot."""
+    """Head centre and glass normal (deg) along the swing: the glass faces the robot, except mid-swing, where it turns
+    up to about 14 deg to its right so the swivel never passes SWIVEL_KEEP."""
     pv = _catmull(SWING_PATH, s)
-    return pv + NECK * _u(180.0), 180.0
+    a1, a2 = chain_ik(pv)
+    n = max(180.0, 180.0 + a1 + a2 + SWIVEL_KEEP)  # the swivel is n - (180 + a1 + a2)
+    return pv + NECK * _u(n), n
 
 
 def square_pose(s: float) -> tuple[np.ndarray, float]:
-    """Head centre and normal while the glass turns square (+50 deg about the swivel), the links held."""
+    """Head centre and normal while the glass turns square (-50 deg about the swivel), the links held."""
     n = _N0 + (180.0 - _N0) * s
     return S0["pivot"] + NECK * _u(n), n
 
@@ -438,7 +452,7 @@ def demo_script(ctx):
         yield from R.grip(OPEN45, 0.6)
         yield from R.move(hover, 1.5, rot=rot0)
     T = _Track(ctx)
-    # 2) square the glass: turn the head +50 deg about the swivel, links held
+    # 2) square the glass: turn the head -50 deg about the swivel, links held
     yield from T.follow(square_pose, SQUARE_S)
     # 3) swing across in front of the wall plate, elbow folding the way it is bent, glass kept parallel
     yield from T.follow(swing_pose, SWING_S)
