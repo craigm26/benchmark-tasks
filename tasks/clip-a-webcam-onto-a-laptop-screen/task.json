@@ -1,0 +1,21 @@
+{
+  "title": "Clip a webcam onto a laptop screen: lip over the top edge, hinged foot folded to the lid back, lid unmoved",
+  "category": "Societal relatability",
+  "keywords": [
+    "webcam",
+    "laptop",
+    "hinged clip",
+    "two-sided fit",
+    "bimanual",
+    "home office"
+  ],
+  "instruction": "Clip the webcam onto the middle of the laptop screen's top edge, lens toward the keyboard, foot folded against the back, then let go.",
+  "context": "Since 2020 clipping a webcam onto a laptop or monitor is an everyday home-office step. The lid is held only by its friction hinge, so a careless push tips it, and an open foot lets the camera tip back. Board tasks move a monitor or reseat a camera; here a hinged clip is closed round both sides of a lid that moves.",
+  "setup": "Cm from the midpoint between the arm bases, x forward, y left; heights above the wood table. Laptop: 14 in Chromebook (Acer Chromebook 314 CB314-3H, 32.6 x 22.5 x 2.0 cm, 1.45 kg, silver plastic), taped down with its screen facing away from the robot: base x 29 to 51.5, centred on y 0; lid hinge at x 29.5, 1 cm up; lid open 110 deg (leaning 20 deg toward the robot), 0.7 cm thick at its top edge, 21.3 cm hinge to edge, top edge at x 22.2, 21.0 cm up. Webcam: Logitech C920e (960-001360), black plastic, body 9.4 x 2.4 x 2.9 cm, 162 g with its clip; clip head 1.9 x 4 cm on the body's underside, front lip 2.2 cm deep under the lens side (rubber-padded inner face; throat 0.9 cm from it to the folded foot), hinged rear foot 5.2 x 3.6 cm. It stands on the table on its lip and its foot, the foot swung 93 deg open from folded, lens toward +x, body level, body centre at x 17.5, y 19, 4.4 cm up. Nothing else on the table.",
+  "scoring": "Read after the robot lets go. 0 if either hand is within 3 cm of the webcam or it moves over 2 mm or turns over 2 deg in the last 1 s; if the lid was ever over 2 deg off its start for 0.5 s (side photo on a protractor card); or if the webcam, once lifted, rested on the table or keyboard for 0.5 s. Seated: clip head on the lid's top edge (within 3 mm, lid between lip and foot), lip on the screen side reaching 10 mm or more below the edge, lens within 10 deg of square to the screen, body centre within 2 cm of the lid's centre line; not seated scores 0. Folded: foot within 6 deg of the lid back (its end 6 mm or less from it). Tilt: the body top's angle from level (angle gauge). 1.0: seated, folded, tilt 4 deg or less. 0.5: seated, folded, tilt 4 to 10. 0.25: seated, tilt 20 or less (foot open). 0 otherwise.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Lift the webcam off, swing its foot to 93 deg on a card gauge, stand it on its tape marks. Reset the lid to 110 deg with a digital angle gauge on the lid back (70 deg from the table). Wipe the lid edge.",
+  "fidelity": "Rigid bodies. The lid's friction hinge is a detent spring (60 N m/rad, 1.5 deg steps: 2.4 N at the top edge opens it a step, 5 N closes it); the foot's stiff hinge is one too (3 N m/rad, 3 deg steps). The camera's tilt hinge is fixed, body level. Pads are rigid, friction 1.0; no USB cable. The sim scores the last step without opening the grippers: a camera still held counts as not released, and one off the edge as not seated.",
+  "scores": "Dream-1 run: 0.0 (left arm reached the webcam on the table, never lifted it, right arm hovered near laptop); demo: 1.0 (left arm clipped webcam on lid top edge, right arm folded foot, both withdrew)",
+  "media": "M-VKVMZA"
+}
