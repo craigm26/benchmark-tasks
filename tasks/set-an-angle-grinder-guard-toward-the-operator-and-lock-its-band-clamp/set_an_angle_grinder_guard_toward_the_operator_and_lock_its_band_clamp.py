@@ -1,15 +1,15 @@
 """On the station table: a cordless 115 mm angle grinder (bare tool, battery out) lying upside down on its gear head and
-motor housing, spindle up, a brown Type 27 grinding wheel on the spindle. Its tool-free wheel guard (zinc steel, a
-190 degree skirt round the wheel's edge) is turned so its closed side faces the front right and its open side faces
-back along the motor housing, toward the hands of whoever picks the grinder up. The guard's band clamp is shut: its
-black lever stands out from the band with a red thumb tab beside the wheel. Opening the lever frees the band so the
-guard turns about the spindle; pushing it shut clamps the band again.
+motor housing, spindle up, a smooth nonabrasive stand-in for a Type 27 grinding wheel on the spindle. Its tool-free
+wheel guard (zinc steel, a 190 degree skirt round the wheel's edge) is turned so its closed side faces the front right
+and its open side faces back along the motor housing, toward the hands of whoever picks the grinder up to grind. The
+guard's band clamp is shut: its black lever stands out from the band with a red thumb tab beside the wheel. Opening
+the lever frees the band so the guard turns about the spindle; pushing it shut clamps the band again.
 
 Requires -E object_jitter=0 (the grinder's 3 cm and 15 degree limits are measured from its start pose).
 
 Run it:  inspect-robots run --embodiment yam_arena -E task=set_an_angle_grinder_guard_toward_the_operator_and_lock_its_band_clamp.py \\
-           -E object_jitter=0 --instruction "A welder cuts with this angle grinder next. Get it ready for them, then
-           let go of it." --scorer task_score ...
+           -E object_jitter=0 --instruction "A welder grinds weld seams flush with this angle grinder next. Get it
+           ready for them, then let go of it." --scorer task_score ...
 """
 
 import math
@@ -36,7 +36,7 @@ ALU = (0.36, 0.37, 0.39)       # gear head, painted cast aluminium
 BLACK = (0.07, 0.07, 0.08)     # neck, rear cap, side handle, lever
 TEAL = (0.05, 0.52, 0.55)      # motor housing
 ZINC = (0.80, 0.81, 0.83)      # guard, bright zinc-plated steel
-WHEEL = (0.47, 0.30, 0.18)     # Type 27 wheel, brown aluminium-oxide grit
+WHEEL = (0.47, 0.30, 0.18)     # nonabrasive stand-in wheel, brown PETG (fabricate.py)
 STEEL = (0.62, 0.63, 0.65)     # clamp nut and inner flange
 ORANGE = (1.00, 0.45, 0.02)    # tape stripe on the guard's closed-side centre
 RED = (0.85, 0.08, 0.06)       # lever thumb tab
@@ -54,7 +54,7 @@ BODY = [
     cyl((0.0, 0.22, 0.029), 0.027, 0.03, BLACK, axis="y", sides=16),                      # rear cap, battery mount
     rod((0.031, 0.0, 0.030), (0.141, 0.0, 0.030), 0.0115, BLACK),                          # side handle, 23 mm x 110 mm
     cyl((0.0, 0.0, 0.07475), 0.0175, 0.0045, STEEL),                                       # inner flange
-    tube((0.0, 0.0, 0.080), 0.0111, 0.0575, 0.006, WHEEL),                                 # 115 x 6 x 22.23 mm wheel
+    tube((0.0, 0.0, 0.080), 0.0111, 0.0575, 0.006, WHEEL),                                 # 115 x 6 x 22.23 stand-in
     cyl((0.0, 0.0, 0.087), 0.019, 0.008, STEEL),                                           # clamp nut
 ]
 WHEEL_R, WHEEL_TOP = 0.0575, 0.083

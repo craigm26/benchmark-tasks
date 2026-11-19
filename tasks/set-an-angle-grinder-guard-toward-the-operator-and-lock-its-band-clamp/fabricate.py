@@ -1,21 +1,30 @@
-"""Print file for the one custom part of this task: the guard-angle gauge used to score a real trial.
+"""Print files for the custom parts of this task: the nonabrasive stand-in wheel and the guard-angle gauge.
 
-Every part that carries the mechanism is a stock part (Makita XAG03 grinder, Makita 123144-0 tool-less guard with its
-band and clamp lever, any Type 27 115 x 6 x 22.23 mm wheel), so nothing here is needed to run a trial. The gauge only
-makes the score quick to read: after the run, set it on the clamp nut (its cup fits over the 38 mm nut), turn its tall
-fin to point along the motor housing, and read where the guard's orange tape falls against the 20 and 60 degree fins.
-It sits inside the skirt (55 mm radius against the skirt's 62 mm) and clear of the wheel (cup floor 2 mm above it).
+The mechanism is all stock: Makita XAG03 grinder, Makita 123144-0 tool-less guard with its band and clamp lever. The
+wheel does not carry the mechanism, but a real abrasive wheel sits a few millimetres below the guard's skirt where the
+gripper pinches it and would wear the pads, so a trial uses a smooth printed stand-in instead.
 
-    python3 fabricate.py [out_dir]      writes q_gauge.stl (ASCII, millimetres) into out_dir (default ./stl)
+- stand_in_wheel.stl: reproduces the size of the Makita 741423-B (4-1/2 x 1/4 x 7/8 in, 24 grit general purpose
+  Type 27 grinding wheel): 115 mm outside diameter, 6 mm thick, 22.23 mm bore. It is a flat disc (the real wheel's
+  depressed centre is not reproduced), mounted on the tool's own inner flange and lock nut like a flat wheel, in brown
+  PETG (about 75 g, 100 percent infill). Smooth plastic, no grit: it cannot abrade the pads.
+- q_gauge.stl: makes the score quick to read. After the run, set it on the clamp nut (its cup fits over the 38 mm
+  nut), turn its tall fin to point along the motor housing, and read where the guard's orange tape falls against the
+  20 and 60 degree fins. It sits inside the skirt (55 mm radius against the skirt's 62 mm), clear of the wheel.
+
+    python3 fabricate.py [out_dir]      writes both STL files (ASCII, millimetres) into out_dir (default ./stl)
 
 Standard library only; importing this file writes nothing. Dimensions match the scene in
-set_an_angle_grinder_guard_toward_the_operator_and_lock_its_band_clamp.py (nut radius 19 mm, 8 mm tall; wheel top
-83 mm and skirt inner radius 62 mm above the table with the grinder upside down).
+set_an_angle_grinder_guard_toward_the_operator_and_lock_its_band_clamp.py (wheel 115 x 6 x 22.23 mm, nut radius
+19 mm, 8 mm tall; wheel top 83 mm and skirt inner radius 62 mm above the table with the grinder upside down).
 """
 
 import math
 import os
 import sys
+
+# Stand-in wheel (mm), the scene's tube(0.0111, 0.0575, 0.006).
+WHEEL_OD, WHEEL_T, WHEEL_BORE = 115.0, 6.0, 22.23
 
 # Gauge dimensions (mm).
 NUT_R, NUT_H = 19.0, 8.0          # clamp nut it sits on
@@ -109,17 +118,26 @@ def write_stl(path, name, shells):
         f.write(f"endsolid {name}\n")
 
 
+def wheel_shells():
+    """The stand-in wheel: one closed annular disc, z = 0 on the flange face."""
+    return [tube_shell(WHEEL_BORE / 2, WHEEL_OD / 2, 0.0, WHEEL_T, n=192)]
+
+
 def main(out_dir="stl"):
     os.makedirs(out_dir, exist_ok=True)
-    shells = gauge_shells()
-    for s in shells:
-        if not check_closed(s) or signed_volume(s) <= 0:
-            raise SystemExit("q_gauge: a shell is open or inside out")
-    path = os.path.join(out_dir, "q_gauge.stl")
-    write_stl(path, "q_gauge", shells)
-    print(f"wrote {path}: {len(shells)} closed shells (slice with union of overlapping volumes), "
-          f"{2 * DISC_R:.0f} mm across, {CUP_DEPTH + DISC_T + POINTER_H:.0f} mm tall")
-    return path
+    paths = []
+    for name, shells, what in (
+            ("stand_in_wheel", wheel_shells(), f"{WHEEL_OD:.0f} mm across, {WHEEL_T:.0f} mm thick, "
+                                               f"{WHEEL_BORE:.2f} mm bore"),
+            ("q_gauge", gauge_shells(), f"{2 * DISC_R:.0f} mm across, {CUP_DEPTH + DISC_T + POINTER_H:.0f} mm tall")):
+        for s in shells:
+            if not check_closed(s) or signed_volume(s) <= 0:
+                raise SystemExit(f"{name}: a shell is open or inside out")
+        path = os.path.join(out_dir, name + ".stl")
+        write_stl(path, name, shells)
+        print(f"wrote {path}: {len(shells)} closed shell(s), {what}")
+        paths.append(path)
+    return paths
 
 
 if __name__ == "__main__":
