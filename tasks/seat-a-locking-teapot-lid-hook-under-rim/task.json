@@ -1,0 +1,20 @@
+{
+  "title": "Seat a locking teapot lid: pitch its underside hook under the spout-side rim, then rock flat",
+  "category": "Societal relatability",
+  "keywords": [
+    "teapot lid",
+    "underside hook",
+    "angled insertion",
+    "rock to seat",
+    "bimanual"
+  ],
+  "instruction": "Put the lid on the teapot so its underside hook (opposite the dark vent) locks under the spout-side rim and sits flat.",
+  "context": "Porcelain teapot lids use a protruding underside hook so they stay locked while pouring. Set down flat, the hook jams on the rim. Because the dark steam vent on the dome sits opposite the hidden hook, the robot must orient the lid, pitch nose-down to tuck the hook under the spout-side rim, and rock flat.",
+  "setup": "Positions in cm from the midpoint between arm bases (x forward, y left; table top z 74.75). Fixed dark walnut wood serving tray: base 22 x 46 x 1 cm centred at x 27.0, y -3.5 (top 1.0 cm above table), four rim walls 1.0 cm wide x 1.4 cm tall, with taped start rings for pot and lid. Loose empty glossy white porcelain teapot (full-scale Seltmann Weiden Trio White 1.25 L size, Article No. 001.686297, 740 g): centred at x 27.0, y -1.5 on the tray, 21.7 cm spout-to-handle along y (spout toward -y, C-handle toward +y), 15.3 cm belly diameter, 10.9 cm rim height above tray (11.9 cm above table; 5 mm thick overhanging collar with 7.0 cm circular mouth bore, rim underside 10.4 cm above tray). Loose matching white porcelain locking lid (115 g): 8.1 cm cap diameter, 5.3 cm total height (1.9 cm skirt depth below flange, 3.4 cm dome and 2.4 cm knob above flange; 6.3 cm outer skirt diameter; 1.5 x 2.2 x 0.5 cm underside locking hook protruding 1.2 cm past skirt to 4.35 cm radius, giving 7.5 cm overall span across the 7.0 cm mouth). Lid starts right-side up on the tray at x 27.0, y -19.5, turned +90 deg so the underside hook points +x and the 9 mm dark charcoal steam vent on the dome faces -x.",
+  "scoring": "Judged in the teapot's live local frame (real trial: ruler, straightedge, top photo, video). Violations (0.0 whole run): teapot tilted > 15 deg or off tray (lowest < 0.5 cm above table or base centre outside tray xy) for 0.3 s; lid off tray (centre outside tray xy or lowest < 0.5 cm above table) for 0.3 s; or lid speed > 0.9 m/s for 0.1 s. End requires both grippers >= 3 cm clear of both parts, neither airborne (> 1 cm above supports), and both < 1 cm/s and < 0.5 rad/s for 1.0 s, else 0.0. Seated: lid upright (tilt <= 3 deg), flange underside within 2.5 mm of rim top, axis within 4 mm of pot axis, hook tip >= 5 mm radially past inner mouth rim, hook top >= 1 mm below rim underside. Aligned: hook heading within 25 deg of spout (-y). Pot ok: tilt <= 3 deg, on tray, base within 3 cm of mark. 1.0: seated, aligned, pot ok; 0.5: seated, pot ok, hook off > 25 deg; 0.0: else.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Tilt the lid ~30 deg to unhook and lift it off, set it right-side up on its taped mark at x 27.0, y -19.5 cm with the dark steam vent facing -x, and verify the empty teapot sits on its mark at x 27.0, y -1.5 cm with spout along -y.",
+  "fidelity": "Full scale and mass (porcelain ~2.24 g/cm3); dry empty pot, rigid unbreakable porcelain, friction 0.45. Mouth and skirt use 24-sided prism colliders with 3.5 mm radial clearance for seating; the modeled 70 mm mouth and 12 mm hook reproduce locking-lid geometry, though exact fired tolerances vary on commercial pots. Simulator scores the final step without opening grippers, so any part within 3 cm of a gripper or > 1 cm above supports scores 0.",
+  "scores": "Dream-1 run: 0.0 (hovered over the lid on the tray and never lifted it onto the teapot); demo: 1.0 (steadied the pot, hooked the lid under the spout rim, and seated it flat)",
+  "media": "M-VARGEM"
+}
