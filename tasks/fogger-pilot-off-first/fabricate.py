@@ -1,10 +1,16 @@
-"""Print-ready STL files (ASCII, mm) of the custom parts of the fogger task, from the same dimensions as the scene:
+"""Print-ready STL files (ASCII, mm) of the custom parts of the fogger task's real trial, from the same dimensions as the
+scene (fogger_pilot_off_first.py):
 
-- jacket_arc.stl: the water heater jacket's front 110 degree arc, 508 mm outside diameter, 4 mm wall, 250 mm tall
-  (print in sections or use a scrap jacket; it only carries the control and the door plate);
-- door_plate.stl: the burner access door, 100 x 70 x 10 mm, with a 28 mm sight-window hole for the tea light;
-- bezel_lip.stl: the bezel ring round the WV8840 knob (68 mm outside, 54 mm inside, 19 mm tall) with the interlock
-  ledge, for a bench mock-up without a real WV8840.
+- door_plate.stl: the burner access door, 100 x 70 x 10 mm, with the 28 mm sight window the amber pilot LED shines
+  through (the LED's 5 mm body fits the 5.2 mm hole in the backing tab);
+- cam_flange.stl: the pilot-lamp cam, a 3 mm flange glued round the gas control knob's skirt 6 mm above the bezel
+  (38.4 mm bore for the 38 mm knob, 21.5 mm rim radius, one lobe out to 30 mm over 20 deg); at OFF the lobe presses
+  the lever of the Omron SS-5GL2 microswitch, opening its NC contact so the LED goes dark;
+- switch_bracket.stl: an L bracket taped to the control's top on the knob's left, with two 2.4 mm slots that let the
+  SS-5GL2 slide 8 mm toward the knob to set the trip point exactly at OFF;
+- knob.stl and bezel_plate.stl: only for the cheaper mock-up route without a real White-Rodgers control: the 38 x 42 mm
+  knob with its 6 x 6.5 x 6 mm interlock tooth on a 6 mm stem, and a 90 x 150 x 5 mm top plate carrying the 68 mm
+  bezel and the interlock lip that blocks the tooth between PILOT and OFF unless the knob is pushed 4.5 mm.
 
 Run as a script: python3 fabricate.py [out_dir]. Importing this module writes nothing.
 """
@@ -13,12 +19,16 @@ import math
 import os
 import sys
 
-TANK_R, WALL, TANK_H = 254.0, 4.0, 250.0
-ARC = math.radians(110.0)
 DOOR = (100.0, 70.0, 10.0)
 WINDOW_R = 14.0
+KNOB_R, KNOB_H = 19.0, 42.0
+TOOTH = (19.0, 25.5, 6.0, 6.0)  # r_in, r_out, width, height (bottom of the knob skirt)
+STEM_R, STEM_L = 3.0, 20.0
 BEZEL = (27.0, 34.0, 19.0)  # r_in, r_out, height
 LIP = (22.5, 27.0, 8.5, 12.0)  # r_in, r_out, height, ledge end (deg) past the tooth centre at PILOT and OFF
+PLATE = (90.0, 150.0, 5.0)
+CAM = (19.2, 21.5, 30.0, 3.0, 20.0)  # bore radius, rim radius, lobe radius, thickness, lobe width (deg)
+BRACKET = (30.0, 20.0, 24.0, 3.0)  # foot length, width, upright height, thickness
 
 
 def _facet(f, a, b, c):
@@ -60,31 +70,66 @@ def _box(f, x0, x1, y0, y1, z0, z1):
         _quad(f, c[a], c[b], c[cc], c[d])
 
 
-def jacket_arc(f):
-    _ring_sector(f, TANK_R - WALL, TANK_R, 0.0, TANK_H, math.pi - ARC / 2, math.pi + ARC / 2, 44)
-
-
 def door_plate(f):
-    """Plate with a square-cornered window approximated by four bars round a 28 mm opening (print flat)."""
+    """Plate with a square-cornered window approximated by four bars round a 28 mm opening (print flat), and a backing
+    tab behind the window's lower edge with a 5.2 mm hole for the 5 mm LED."""
     w, h, t = DOOR
     s = WINDOW_R
     _box(f, -w / 2, w / 2, -h / 2, -s, 0, t)
     _box(f, -w / 2, w / 2, s, h / 2, 0, t)
     _box(f, -w / 2, -s, -s, s, 0, t)
     _box(f, s, w / 2, -s, s, 0, t)
+    # LED tab: 20 x 12 x 3 mm below the window, its hole as four bars round a 5.2 mm square
+    _box(f, -10, -2.6, -s - 12, -s, -3, 0)
+    _box(f, 2.6, 10, -s - 12, -s, -3, 0)
+    _box(f, -2.6, 2.6, -s - 12, -s - 8.6, -3, 0)
+    _box(f, -2.6, 2.6, -s - 3.4, -s, -3, 0)
 
 
-def bezel_lip(f):
+def cam_flange(f):
+    r0, r1, rl, t, wdeg = CAM
+    lobe = math.radians(wdeg)
+    _ring_sector(f, r0, r1, 0.0, t, lobe / 2, 2 * math.pi - lobe / 2, 60)
+    _ring_sector(f, r0, rl, 0.0, t, -lobe / 2, lobe / 2, 6)  # lobe: glued under the knob's pointer
+
+
+def switch_bracket(f):
+    a, w, h, t = BRACKET
+    _box(f, 0, a, 0, w, 0, t)  # foot, taped to the control top
+    # upright with two 2.4 x 8 mm slots (bars round them), the switch body bolts to its face
+    _box(f, 0, t, 0, w, t, t + 4)
+    _box(f, 0, t, 0, w, t + 6.4, t + 12)
+    _box(f, 0, t, 0, w, t + 14.4, h)
+    for y0, y1 in ((0, 3), (5.4, 14.6), (17, w)):
+        _box(f, 0, t, y0, y1, t + 4, t + 6.4)
+        _box(f, 0, t, y0, y1, t + 12, t + 14.4)
+
+
+def knob(f):
+    _ring_sector(f, 0.001, KNOB_R, 0.0, KNOB_H, 0.0, 2 * math.pi, 48)
+    r0, r1, w, h = TOOTH
+    _box(f, -w / 2, w / 2, r0 - 0.5, r1, 0.0, h)  # tooth at +y (its direction at ON)
+    _ring_sector(f, 0.001, STEM_R, -STEM_L, 0.0, 0.0, 2 * math.pi, 16)
+
+
+def bezel_plate(f):
+    x, y, t = PLATE
     r0, r1, h = BEZEL
-    _ring_sector(f, r0, r1, 0.0, h, 0.0, 2 * math.pi, 48)
+    # plate with a 54 mm square opening under the bezel (four bars), bezel ring standing on it
+    _box(f, -x / 2, x / 2, -y / 2, -r0, 0, t)
+    _box(f, -x / 2, x / 2, r0, y / 2, 0, t)
+    _box(f, -x / 2, -r0, -r0, r0, 0, t)
+    _box(f, r0, x / 2, -r0, r0, 0, t)
+    _ring_sector(f, r0, r1, t, t + h, 0.0, 2 * math.pi, 48)
     li, lo, lh, gap = LIP
     # the ledge spans from the tooth's OFF position + gap to its PILOT position - gap (tooth at +90 deg at ON)
     a0 = math.radians(90.0 - 90.0 + gap)
     a1 = math.radians(90.0 - 45.0 - gap)
-    _ring_sector(f, li, lo + 0.5, h - lh, h, a0, a1, 6)
+    _ring_sector(f, li, lo + 0.5, t + h - lh, t + h, a0, a1, 6)
 
 
-PARTS = {"jacket_arc": jacket_arc, "door_plate": door_plate, "bezel_lip": bezel_lip}
+PARTS = {"door_plate": door_plate, "cam_flange": cam_flange, "switch_bracket": switch_bracket, "knob": knob,
+         "bezel_plate": bezel_plate}
 
 
 def main(out_dir="."):
