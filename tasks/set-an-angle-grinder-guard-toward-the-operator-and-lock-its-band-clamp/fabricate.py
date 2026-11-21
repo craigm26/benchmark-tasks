@@ -1,22 +1,31 @@
-"""Print files for the custom parts of this task: the nonabrasive stand-in wheel and the guard-angle gauge.
+"""Print files for the custom parts of this task: the cam lever's thumb cap, the nonabrasive stand-in wheel and the
+guard-angle gauge.
 
-The mechanism is all stock: Makita XAG03 grinder, Makita 123144-0 tool-less guard with its band and clamp lever. The
-wheel does not carry the mechanism, but a real abrasive wheel sits a few millimetres below the guard's skirt where the
-gripper pinches it and would wear the pads, so a trial uses a smooth printed stand-in instead.
+The mechanism is stock: a Makita XAG03 grinder and its Makita 123144-0 tool-less guard, whose band is locked by a
+hinged cam lever (Makita XAG03 manual, page 9, "For tool with clamp lever type wheel guard", figures 015084 and
+015085). The printed parts only make it reachable, safe and quick to score:
 
+- lever_cap.stl: a thumb cap pushed onto the end of the 123144-0 guard's cam lever. With the grinder upside down the
+  lever lies under the wheel's plane; the cap gives it an upright tab 10 x 14 mm, 40 mm tall, standing beside the
+  wheel's edge and reaching 17.5 mm above its face, so a gripper coming down from above can push the lever open and
+  shut. The lever passes through a slot 8.6 x 6.6 mm (the scene's 8 x 6 mm lever end plus 0.3 mm a side); if your
+  lever's end measures differently, set LEVER_SLOT and print again, and bond it with a strip of 3M VHB 4910 tape.
+  Print in red PETG, slot horizontal, no supports needed for an 8.6 mm bridge. It adds 4 g at the lever's tip; the
+  lever's travel (35 degrees), pivot and over-centre action are the stock guard's.
 - stand_in_wheel.stl: reproduces the size of the Makita 741423-B (4-1/2 x 1/4 x 7/8 in, 24 grit general purpose
   Type 27 grinding wheel): 115 mm outside diameter, 6 mm thick, 22.23 mm bore. It is a flat disc (the real wheel's
   depressed centre is not reproduced), mounted on the tool's own inner flange and lock nut like a flat wheel, in brown
   PETG (about 75 g, 100 percent infill). Smooth plastic, no grit: it cannot abrade the pads.
-- q_gauge.stl: makes the score quick to read. After the run, set it on the clamp nut (its cup fits over the 38 mm
+- q_gauge.stl: makes the score quick to read. After the run, set it on the wheel lock nut (its cup fits over the 38 mm
   nut), turn its tall fin to point along the motor housing, and read where the guard's orange tape falls against the
   20 and 60 degree fins. It sits inside the skirt (55 mm radius against the skirt's 62 mm), clear of the wheel.
 
-    python3 fabricate.py [out_dir]      writes both STL files (ASCII, millimetres) into out_dir (default ./stl)
+    python3 fabricate.py [out_dir]      writes the three STL files (ASCII, millimetres) into out_dir (default ./stl)
 
 Standard library only; importing this file writes nothing. Dimensions match the scene in
 set_an_angle_grinder_guard_toward_the_operator_and_lock_its_band_clamp.py (wheel 115 x 6 x 22.23 mm, nut radius
-19 mm, 8 mm tall; wheel top 83 mm and skirt inner radius 62 mm above the table with the grinder upside down).
+19 mm, 8 mm tall; wheel top 83 mm, skirt inner radius 62 mm, lever 8 x 6 mm at 62 to 68 mm and its tab 10 x 14 mm
+from 60.5 to 100.5 mm above the table with the grinder upside down).
 """
 
 import math
@@ -26,8 +35,13 @@ import sys
 # Stand-in wheel (mm), the scene's tube(0.0111, 0.0575, 0.006).
 WHEEL_OD, WHEEL_T, WHEEL_BORE = 115.0, 6.0, 22.23
 
+# Lever thumb cap (mm): the scene's tab box (TAB_ALONG x TAB_W, TAB_Z0..TAB_TOP) round its lever box (8 x 6 mm).
+TAB_ALONG, TAB_W, TAB_H = 10.0, 14.0, 40.0
+LEVER_SLOT = (8.6, 6.6)            # slot width and height for the lever's end
+SLOT_Z0 = 62.0 - 0.3 - 60.5        # slot floor above the cap's base (lever bottom 62 mm, cap base 60.5 mm)
+
 # Gauge dimensions (mm).
-NUT_R, NUT_H = 19.0, 8.0          # clamp nut it sits on
+NUT_R, NUT_H = 19.0, 8.0          # wheel lock nut it sits on
 CUP_RIN, CUP_ROUT, CUP_DEPTH = 19.5, 23.0, 6.0
 DISC_R, DISC_T = 55.0, 3.0         # under the skirt's 62 mm inner radius
 FIN_R0, FIN_R1, FIN_W, FIN_H = 40.0, 54.0, 2.0, 6.0
@@ -118,6 +132,25 @@ def write_stl(path, name, shells):
         f.write(f"endsolid {name}\n")
 
 
+def box_shell(x0, x1, y0, y1, z0, z1):
+    pts = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+    return prism_shell([(x, y, z0) for x, y in pts], [(x, y, z1) for x, y in pts])
+
+
+def lever_cap_shells():
+    """The cap as four overlapping closed boxes round a through slot along x (the lever's length), z = 0 at its base."""
+    sw, sh = LEVER_SLOT
+    a, w = TAB_ALONG, TAB_W
+    z_lo, z_hi = SLOT_Z0, SLOT_Z0 + sh
+    e = 0.2                                                             # overlap so the boxes fuse
+    return [
+        box_shell(0.0, a, -w / 2, w / 2, 0.0, z_lo),                    # floor under the slot
+        box_shell(0.0, a, -w / 2, w / 2, z_hi, TAB_H),                  # the tab above the slot
+        box_shell(0.0, a, -w / 2, -sw / 2, z_lo - e, z_hi + e),         # side wall
+        box_shell(0.0, a, sw / 2, w / 2, z_lo - e, z_hi + e),           # side wall
+    ]
+
+
 def wheel_shells():
     """The stand-in wheel: one closed annular disc, z = 0 on the flange face."""
     return [tube_shell(WHEEL_BORE / 2, WHEEL_OD / 2, 0.0, WHEEL_T, n=192)]
@@ -127,6 +160,8 @@ def main(out_dir="stl"):
     os.makedirs(out_dir, exist_ok=True)
     paths = []
     for name, shells, what in (
+            ("lever_cap", lever_cap_shells(), f"{TAB_ALONG:.0f} x {TAB_W:.0f} x {TAB_H:.0f} mm, "
+                                              f"slot {LEVER_SLOT[0]} x {LEVER_SLOT[1]} mm"),
             ("stand_in_wheel", wheel_shells(), f"{WHEEL_OD:.0f} mm across, {WHEEL_T:.0f} mm thick, "
                                                f"{WHEEL_BORE:.2f} mm bore"),
             ("q_gauge", gauge_shells(), f"{2 * DISC_R:.0f} mm across, {CUP_DEPTH + DISC_T + POINTER_H:.0f} mm tall")):
