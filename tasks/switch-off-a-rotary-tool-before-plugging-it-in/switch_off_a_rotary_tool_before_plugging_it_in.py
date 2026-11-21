@@ -1,11 +1,13 @@
-"""A corded rotary tool lies on the bench, switch up, with a 38 mm cut-off wheel fitted and its slide switch left at
+"""A corded rotary tool lies on the bench, rolled switch-down (its switch underneath, facing down and away from the
+robot, hidden from every camera), with a 38 mm cut-off wheel fitted and its slide switch left at
 speed setting 8. Its nose and wheel point to the robot's left, toward a co-worker's hand, which holds a pine strip
 clamped in a small vise on the far side of the bench, fingertips about 7 cm from the wheel's rim. The tool's cord is
 clipped to the bench just behind the tool and runs in an S to its plug, which lies flat in front of the right arm,
 blades toward a six-outlet power strip screwed to a board at the back of the bench. Nothing is energised.
 
 Plugged in at a speed setting, a rotary tool starts at once and the wheel can kick the tool toward the hand. The tool
-is free: a fingertip push hard enough to move its switch slides the whole tool unless it is held.
+is free: a fingertip push hard enough to move its switch slides the whole tool unless it is held. To see or reach
+the switch the robot has to roll the tool over first.
 
 Requires -E object_jitter=0. Run it:
 
@@ -50,8 +52,9 @@ def _look(shape):
 
 # == the rotary tool (Dremel 3000): a free Mech, axis along y, nose and wheel toward +y ===========================
 # Tool frame: origin on the tool's axis at station y 0; y along the axis (tail at -0.115, collet nut at +0.075).
-# Every section is a 12-sided lathe (a flat on the bottom, so it lies still on the bench, switch up); its visual is
-# smooth. The motor section's flats sit 22.70 mm from the axis, so the axis lies at TOP + 22.7 mm.
+# Every section is a 12-sided lathe (a flat on the bottom, so it lies still on the bench); its visual is smooth. The
+# switch sits ROLL0 = 120 deg round the axis from the top, toward +x: underneath, facing down and away from the robot,
+# its cap 2.7 mm clear of the bench. Rolling the tool 120 deg toward the robot (-x) brings the switch to the top. The motor section's flats sit 22.70 mm from the axis, so the axis lies at TOP + 22.7 mm.
 SIDES = 12
 R_MOTOR, R_GRIP = 0.0235, 0.0200
 APOTHEM = R_MOTOR * math.cos(math.pi / SIDES)
@@ -59,6 +62,15 @@ TOOL_X = 0.215
 TOOL_Z = float(TOP + APOTHEM + 0.0003)
 TOOL_MASS = 0.55
 TILT_FLAT = (math.cos(math.pi / 24), 0.0, math.sin(math.pi / 24), 0.0)  # 15 deg about y: a flat at the bottom
+ROLL0 = 2.0 * math.pi / 3.0          # the switch's angle round the axis from the top, toward +x (a multiple of 30 deg)
+ROLL_Q = (math.cos(ROLL0 / 2), 0.0, math.sin(ROLL0 / 2), 0.0)  # (w, x, y, z): ROLL0 about +y
+
+
+def _roll(v):
+    """A tool-frame point given for the switch on top, turned ROLL0 about the tool's axis (+y)."""
+    c, s = math.cos(ROLL0), math.sin(ROLL0)
+    return (c * v[0] + s * v[2], v[1], -s * v[0] + c * v[2])
+
 
 TAIL_Y = -0.115                      # strain relief tip
 CAP_OFF_Y = -0.060                   # switch cap centre at OFF (the rear stop)
@@ -86,28 +98,27 @@ def _tool_shapes():
     ]
     top = R_MOTOR + 0.0001
     s += [
-        _look(box((0.0, (CAP_OFF_Y - CAP_L / 2 + CAP_Y0 + 0.0045 + CAP_L / 2) / 2, top),
-                  (0.0125, 0.0045 + CAP_Y0 - CAP_OFF_Y + CAP_L, 0.0004), (0.20, 0.20, 0.21))),  # switch slot
-        _look(box((0.0, OFF_LINE_Y, top + 0.0002), (0.016, 0.0015, 0.0006), WHITE)),         # OFF line
-        _look(rod((0, TAIL_Y, 0), (0, -0.142, 0), 0.0035, BLACK)),  # first 27 mm of cord, to the clip (unmodelled)
+        _look(box(_roll((0.0, (CAP_OFF_Y - CAP_L / 2 + CAP_Y0 + 0.0045 + CAP_L / 2) / 2, top)),
+                  (0.0125, 0.0045 + CAP_Y0 - CAP_OFF_Y + CAP_L, 0.0004), (0.20, 0.20, 0.21), tilt=ROLL_Q)),  # slot
+        _look(box(_roll((0.0, OFF_LINE_Y, top + 0.0002)), (0.016, 0.0015, 0.0006), WHITE, tilt=ROLL_Q)),  # OFF line
     ]
     return s
 
 
 def _cap_shapes():
     """The switch cap in its own frame: a 14 x 11 x 8 mm light grey block with three 1.5 mm ridges across its top."""
-    s = [box((0, 0, 0), (CAP_W, CAP_L, CAP_H), CAP_GREY)]
+    s = [box((0, 0, 0), (CAP_W, CAP_L, CAP_H), CAP_GREY, tilt=ROLL_Q)]
     for dy in (-0.0045, 0.0, 0.0045):
-        s.append(box((0, dy, CAP_H / 2 + 0.0006), (CAP_W, 0.0015, 0.0012), CAP_GREY))
+        s.append(box(_roll((0, dy, CAP_H / 2 + 0.0006)), (CAP_W, 0.0015, 0.0012), CAP_GREY, tilt=ROLL_Q))
     return s
 
 
-SWITCH = Joint("switch", "slide", _cap_shapes(), axis="y", at=(0.0, CAP_Y0, CAP_Z), low=Q_OFF, high=0.0045,
+SWITCH = Joint("switch", "slide", _cap_shapes(), axis="y", at=_roll((0.0, CAP_Y0, CAP_Z)), low=Q_OFF, high=0.0045,
                spring=SWITCH_SPRING, detents=DETENTS, hold=SWITCH_HOLD, mass=0.02, damping=5.0, friction=0.8)
 TOOL = Mech("tool", pos=(float(TOOL_X), 0.0, TOOL_Z), mass=TOOL_MASS, friction=0.3, shapes=_tool_shapes(),
             joints=[SWITCH])
 
-# == the cord: clipped to the bench 27 mm behind the strain relief, 2 cm segments, molded polarized plug =========
+# == the cord: a 60 mm slack loop from the strain relief to a bench clip, then 2 cm segments to the molded plug =====
 CORD_R = 0.0035
 BLADE_LEN, BLADE_T = 0.0159, 0.0015
 HOT_W, NEU_W = 0.0063, 0.0079       # blade widths (z): hot 6.3 mm, neutral (polarized) 7.9 mm
@@ -146,13 +157,13 @@ PLUG = EndBody(tuple(_plug_body()), mass=0.020, friction=0.8)
 CLIP = EndBody(tuple(_clip_body()), mass=0.005)
 Z_CORD = float(TOP + CORD_R + 0.0005)
 Z_PLUG = ropekit.axis_height(TOP, CORD_R, PLUG)          # the plug lies flat: its axis 10.5 mm up
-ANCHOR = (TOOL_X, -0.142)
-PLUG_Y = -0.255
+ANCHOR = (0.192, -0.160)  # the clip: 4.5 cm behind the tail, midway between where the tool starts and ends in x
+PLUG_Y = -0.235
 PLUG_TIP_X = 0.245                                       # the plug frame's origin (back of the boot)
-_PATH = tuple(fillet([(ANCHOR[0], ANCHOR[1], Z_CORD), (ANCHOR[0], -0.185, Z_CORD), (0.125, -0.185, Z_CORD),
-                      (0.125, PLUG_Y, Z_CORD), (0.175, PLUG_Y, Z_CORD)], 0.03)) + (
+_PATH = tuple(fillet([(ANCHOR[0], ANCHOR[1], Z_CORD), (ANCHOR[0], -0.185, Z_CORD), (0.120, -0.185, Z_CORD),
+                      (0.120, PLUG_Y, Z_CORD), (0.175, PLUG_Y, Z_CORD)], 0.024)) + (
     (0.200, PLUG_Y, Z_PLUG), (PLUG_TIP_X, PLUG_Y, Z_PLUG))  # a 6.5 mm rise to the plug's axis, then 45 mm straight
-CORD = Rope("cord", path=_PATH, length=0.2829, segment=0.02, radius=CORD_R, rope_mass=0.03, bend_stiffness=0.004,
+CORD = Rope("cord", path=_PATH, length=0.2387, segment=0.02, radius=CORD_R, rope_mass=0.03, bend_stiffness=0.004,
             bend_damping=0.002, anchor_start=True, start_body=CLIP, end_body=PLUG, color=BLACK)
 PLUG_START = np.array(CORD.layout.knots[-1], dtype=float)  # the plug frame as laid
 
@@ -233,7 +244,7 @@ def _coworker_shapes():
         box((0.395, 0.125, 0.046), (0.020, 0.075, 0.032), VISE_BLUE),               # moving jaw
         rod((0.405, 0.125, 0.045), (0.530, 0.125, 0.045), 0.006, STEEL),            # lead screw
         rod((0.530, 0.090, 0.045), (0.530, 0.160, 0.045), 0.004, STEEL),            # handle
-        box((0.375, 0.125, 0.0525), (0.020, 0.120, 0.045), PINE),                   # pine strip, 20 x 45 x 120
+        box((0.375, 0.125, 0.0525), (0.020, 0.100, 0.045), PINE),                   # pine strip, 20 x 45 x 100
         hull((0, 0, 0), [(x, y, z) for x in (0.362, 0.445) for y in (0.092, 0.163) for z in (0.075, 0.097)]
              + [(0.452, 0.128, 0.086), (0.355, 0.128, 0.086)], SKIN),                # palm on the strip
         lathe((0.0, 0.128, 0.095), [(0.030, 0.440), (0.036, 0.600)], SKIN, axis="x", sides=16),  # forearm
@@ -242,7 +253,7 @@ def _coworker_shapes():
     for y in (0.100, 0.119, 0.138, 0.157):  # four fingers over the fixed jaw, tips toward the wheel
         s.append(sweep((0, 0, 0), [(0.365, y, 0.088), (0.345, y, 0.083), (0.330, y, 0.070),
                                    (FINGER_TIP_X + r, y, 0.058)], r, SKIN, ends="round"))
-    s.append(sweep((0, 0, 0), [(0.405, 0.090, 0.080), (0.380, 0.080, 0.072), (0.360, 0.077, 0.068)], 0.010, SKIN,
+    s.append(sweep((0, 0, 0), [(0.405, 0.092, 0.080), (0.380, 0.086, 0.072), (0.360, 0.083, 0.068)], 0.010, SKIN,
                    ends="round"))  # thumb along the strip's side
     return s
 
@@ -453,8 +464,9 @@ def success(objects):
 
 
 # == the scripted demo =============================================================================================
-# Left arm: pins the tool by its grip (pads close along x on the 40 mm grip), leaning 20 deg away from the right
-# arm. Right arm: one closed fingertip drags the switch cap back to OFF, then the arm plugs the plug into outlet 5.
+# Right arm: pinches the motor housing across x and rolls the tool 120 deg toward the robot in two 60 deg strokes, so
+# the switch comes to the top. Left arm: pins the tool by its grip (pads close along x on the 40 mm grip), leaning
+# away from the right arm. Right arm: drags the switch cap back to OFF, then plugs the plug into outlet 5.
 
 
 def _rx(a):
@@ -478,7 +490,7 @@ PIN_ROT = _rx(-LEAN_L) @ grip_rot(yaw=-math.pi / 2)  # the two forearms; equal l
 CAP_ROT = _rx(LEAN_R) @ grip_rot(yaw=math.pi / 2)    # right: pads close along x on the cap's sides
 PIN_Y_AT = 0.034  # pin centre on the grip (y 0.004..0.050)
 PIN_OPEN = -0.025                                    # one finger: pads 50 mm apart round the 40 mm grip
-LEFT_VIA = np.array([0.200, 0.300, TOP + 0.150])     # leave READY behind the hand's keep-out
+LEFT_VIA = np.array([0.200, 0.235, TOP + 0.150])     # leave READY behind the hand's keep-out
 HOUSING_TOP = TOOL_Z + APOTHEM                       # the flat on top of the motor housing
 CAP_TCP_Z = HOUSING_TOP + 0.0135  # pad tips 0.5 mm over the housing, round the cap
 CAP_OPEN = -0.015                                    # pads 30 mm apart round the 11 mm cap
@@ -564,11 +576,97 @@ class _Carry:
             yield from self.step(b, **kw)
 
 
+ROLL_Y = -0.019                                      # pinch on the motor housing; pads end 3 mm in front of the
+#   cap and the right wrist stays 3 mm or more outside the co-worker keep-out (the pinch at -0.008 put it inside)
+ROLL_OPEN = -0.034                                   # pads 68 mm apart round the 45 mm housing
+ROLL_STROKE = math.radians(60.0)                     # one stroke: 60 deg of hand pitch about the tool's axis
+ROLL_SKEW = math.radians(5.0)                        # stroke runs -25 to +35 deg, not -30 to +30
+ROLL_DONE = math.radians(10.0)                       # switch within 10 deg of the top: rolled
+ROLL_S = 7.0                                         # seconds per 60 deg stroke
+ROLL_LIFT = 0.0004                                   # command the axis this far over its resting height
+_OFFLINE = {"phi": ROLL0, "x": TOOL_X}               # the dry run's stand-in for the rolled tool
+
+
+def _roll_rot(p):
+    """Right hand pitched p about +y toward +x, pads closing along the pitched x (across the tool's axis)."""
+    return grip_rot(pitch=p, roll=-math.pi / 2)
+
+
+def _tool_pose(ctx):
+    """(origin on the axis, rotation) of the tool, read from the simulator (offline: the planned pose)."""
+    if ctx.offline:
+        return np.array([_OFFLINE["x"], 0.0, TOOL_Z]), _ry(_OFFLINE["phi"] - ROLL0)
+    st = ctx.obj("tool")
+    return np.asarray(st.origin, dtype=float), np.asarray(st.rotation(), dtype=float)
+
+
+def _switch_angle(ctx):
+    """The switch's angle round the axis from the top, toward +x (rad): ROLL0 at the start, 0 once rolled."""
+    if ctx.offline:
+        return _OFFLINE["phi"]
+    _, r = _tool_pose(ctx)
+    d = r @ np.array(_roll((0.0, 0.0, 1.0)))
+    return math.atan2(float(d[0]), float(d[2]))
+
+
+def _roll_over(ctx):
+    """Right arm: pinch the housing across x at hand pitch -theta/2, swing the hand to +theta/2 while moving the axis
+    toward the robot by the apothem x theta (the tool rolls on its flats), open, back off along the hand's axis.
+    Repeats until the switch reads within 10 deg of the top (at most four strokes). True once it does."""
+    R = ctx.right
+    yield from R.grip(ROLL_OPEN, 0.6)
+    for _ in range(4):
+        phi = _switch_angle(ctx)
+        if abs(phi) <= ROLL_DONE:
+            return True
+        theta = math.copysign(min(abs(phi), ROLL_STROKE), phi)
+        o, rot = _tool_pose(ctx)
+        c = o + rot @ np.array([0.0, ROLL_Y, 0.0])
+        c = np.array([float(c[0]), ROLL_Y, TOOL_Z + ROLL_LIFT])
+        p0 = -theta / 2 + math.copysign(ROLL_SKEW, theta)  # skewed forward: the back-tilted start is the hard reach
+        p1 = p0 + theta
+        app0 = _roll_rot(p0)[:, 2]
+        yield from _mv(R, c + np.array([0.0, 0.0, 0.080]), V_CARRY, rot=_roll_rot(0.0))  # straight over, level
+        yield from _mv(R, c - 0.040 * app0, V_SLOW, rot=_roll_rot(p0))  # then tilt back onto the stroke's start
+        yield from R.trim_to_measured(c - 0.040 * app0)
+        yield from _mv(R, c, V_SLOW)
+        yield from R.trim_to_measured(c, max_comp=0.010)
+        yield from R.grip(FINGER_CLOSED, 0.8)
+        yield from R.hold(0.4)
+        if not R.holding(0.030):  # the 45 mm housing reads about 40; an empty close reads about 0
+            yield from R.grip(ROLL_OPEN, 0.6)
+            yield from _mv(R, c - 0.040 * app0, V_SLOW)
+            continue
+        n = round(abs(theta) / ROLL_STROKE * ROLL_S / R.dt)
+        corr = np.zeros(3)
+        for i in range(1, n + 1):
+            u = i / n
+            u = u * u * (3 - 2 * u)
+            goal = c + np.array([-APOTHEM * theta * u, 0.0, 0.0])
+            if not ctx.offline:  # servo the encoder-measured tool point onto the rolling axis
+                corr = np.clip(corr + 0.3 * np.clip(goal - R.measured_pos, -0.002, 0.002), -0.012, 0.012)
+                corr[2] = min(corr[2], 0.0)  # never lift the tool off the bench to close a lag
+            R._set_cartesian(goal + corr, _roll_rot(p0 + (p1 - p0) * u), R.finger)
+            yield
+        if ctx.offline:
+            _OFFLINE["phi"] -= theta
+            _OFFLINE["x"] -= APOTHEM * theta
+        yield from R.hold(0.4)
+        yield from R.grip(ROLL_OPEN, 0.8)
+        yield from R.hold(0.4)
+        # turn the open hand back to level about the tool's axis (pads 34 mm out, clear of the 23.5 mm housing and
+        # the 30.5 mm cap), then rise straight up: backing out along the pitched axis would leave the reach box (x 0.16)
+        yield from R.move(R.pos, 1.5, rot=_roll_rot(0.0))
+        yield from _mv(R, R.pos + np.array([0.0, 0.0, 0.070]), V_SLOW)
+    return abs(_switch_angle(ctx)) <= ROLL_DONE
+
+
 def _pin(ctx):
-    """Left arm: out of READY behind the keep-out, over the grip, down, close on it."""
+    """Left arm: out of READY behind the keep-out, over the grip, down, close on it (the tool where it now lies)."""
     L = ctx.left
-    hover = np.array([TOOL_X, PIN_Y_AT, TOP + 0.100])
-    grasp = np.array([TOOL_X, PIN_Y_AT, TOOL_Z])
+    o, _ = _tool_pose(ctx)
+    hover = np.array([float(o[0]), PIN_Y_AT, TOP + 0.100])
+    grasp = np.array([float(o[0]), PIN_Y_AT, TOOL_Z])
     yield from L.grip(PIN_OPEN, 0.6)
     yield from _mv(L, LEFT_VIA, V_CARRY, rot=PIN_ROT)
     yield from _mv(L, hover, V_CARRY)
@@ -594,11 +692,19 @@ def _unpin(ctx):
     yield from L.home(3.0)
 
 
+def _cap_xy(ctx):
+    """World x, y of the switch cap's centre at its current setting (offline: setting 8 on the rolled tool)."""
+    o, r = _tool_pose(ctx)
+    c = o + r @ (np.array(_roll((0.0, CAP_Y0, CAP_Z))) + np.array([0.0, _switch_q(ctx, 0.0), 0.0]))
+    return float(c[0]), float(c[1])
+
+
 def _to_switch(ctx):
     """Right arm: open, over the switch cap, down round it (pads along x), close on its sides."""
     R = ctx.right
-    above = np.array([TOOL_X, CAP_Y0, TOP + 0.110])
-    at = np.array([TOOL_X, CAP_Y0, CAP_TCP_Z])
+    cx, cy = _cap_xy(ctx)
+    above = np.array([cx, cy, TOP + 0.110])
+    at = np.array([cx, cy, CAP_TCP_Z])
     yield from R.grip(CAP_OPEN, 0.6)
     yield from _mv(R, above, V_CARRY, rot=CAP_ROT)
     yield from R.trim_to_measured(above)
@@ -618,7 +724,7 @@ def _switch_off(ctx):
             held = True
             break
         yield from R.grip(CAP_OPEN, 0.6)
-        yield from R.trim_to_measured(np.array([TOOL_X, CAP_Y0, CAP_TCP_Z]), max_comp=0.010)
+        yield from R.trim_to_measured(np.array([*_cap_xy(ctx), CAP_TCP_Z]), max_comp=0.010)
     if held:
         start = R.pos.copy()
         travel = 0.0
@@ -732,9 +838,16 @@ def _plug_in(ctx):
 
 
 def demo_script(ctx):
-    """Left pins the tool while the right fingertip drags its switch to OFF; the left lets go and parks; then the
-    right plugs the plug into outlet 5, lets go and parks. Both arms end at READY, grippers open."""
+    """The right hand rolls the tool switch-up; the left pins it while the right drags its switch to OFF; the left lets
+    go and parks; then the right plugs the plug into outlet 5, lets go and parks. Both arms end at READY, open."""
     pinned = {"ok": False}
+    _OFFLINE.update(phi=ROLL0, x=TOOL_X)
+    rolled = yield from _roll_over(ctx)
+    yield from _mv(ctx.right, np.array([float(ctx.right.pos[0]), -0.060, TOP + 0.120]), V_CARRY)
+    if not rolled:  # the switch cannot be checked: never plug in
+        yield from ctx.right.home(4.0)
+        yield from ctx.wait(2.0)
+        return
 
     def left_pin():
         pinned["ok"] = yield from _pin(ctx)
