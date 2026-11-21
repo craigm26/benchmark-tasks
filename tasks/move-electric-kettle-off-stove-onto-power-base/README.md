@@ -56,6 +56,14 @@ edits any body or joint.
 
 ## Fidelity
 
+**Weight.** The scene and the real trial both use the dry 600 g Hamilton Beach 40998 kettle with no ballast. A full
+1.0 L fill would weigh about 1.6 kg. The task's hard steps (finding the power base, seating the 48 mm socket over the
+tapered pillar within 6 mm and 3 deg, and pressing the paddle switch without tipping the kettle) depend on the
+kettle's geometry, which is identical dry or filled; a filled kettle is harder to carry but seats more readily. A real
+trial that wants the filled weight can add a sealed, dry ballast instead of water: for example two 250 g sealed bags
+of steel shot taped to the inside floor of the carafe (about 1.1 kg total, roughly half full), keeping the rig dry;
+simulated scores are for the dry kettle.
+
 Heat, plastic melting, water and mains electricity are not simulated; the dry unplugged kettle represents a filled
 kettle ready to boil, with a blue fill meniscus rendered inside its look-only water window. `burner_lamp` and
 `kettle_led` reflect dial, seating and switch states via USD visibility. The handle toggle uses a detent spring
@@ -87,7 +95,7 @@ inspect-robots run --embodiment yam_arena --policy yam_scripted \
 - **Seed and layout:** `-E object_jitter=0` is required so the burner, power base and kettle start at the exact marked
   positions.
 - **Runtime per trial:** the demo takes about 66 s of simulated time (1,328 steps including the final parked hold);
-  a Dream-1 trial runs up to 2,400 steps (2 minutes at 20 Hz). Wall-clock time on one L40S, including Isaac Sim start-up: about 520 s for the demo and about 870 s for a full Dream-1 trial.
+  a Dream-1 trial runs up to 2,400 steps (2 minutes at 20 Hz). Wall-clock time on one L40S, including Isaac Sim start-up: about 520 s for the demo and about 790 s for a full Dream-1 trial.
 - **Score:** `task_score` reports 1.0 once `success()` (full 1.00 score with both arms >= 10 cm clear of the kettle)
   has held for 8.0 s (`SUCCESS_HOLD_S = 8.0`), otherwise `score()` at the end of the run (`SCORE_OVER = "end"`).
 
@@ -100,12 +108,10 @@ an unplugged dry kettle):
 1. **Whole-run 0.0 latches** (trial scores 0.0 even if corrected later):
    - Burner dial turned `>= 0.25 rad` (14 deg past OFF, red lamp lit) continuously for `>= 0.2 s` (4 steps), kettle on
      or off the burner.
-   - Kettle `boil_switch >= 0.35 rad` (20 deg ON) while the kettle is NOT seated on `power_base` continuously for
-     `>= 0.2 s` (4 steps).
    - Kettle tilted `> 45 deg` continuously for `>= 0.5 s` (10 steps), or kettle underside drops more than 5 cm below the
      table top at any step.
 2. **End-of-run conditions** (must hold for the final 1.0 s = 20 steps, else 0.0):
-   - Burner dial `< 0.25 rad`, switch not ON while unseated, kettle linear speed `< 15 mm/s` and angular speed
+   - Burner dial `< 0.25 rad`, kettle linear speed `< 15 mm/s` and angular speed
      `< 0.15 rad/s`, and every finger pad of both arms `>= 30 mm` clear of the kettle (`released()`).
 3. **Seated on power base:** kettle base centre within 6 mm horizontally of `(34.0, -10.5)`, skirt underside within
    3 mm of the 2.2 cm power-base deck, and tilt `<= 3 deg`.
@@ -113,8 +119,12 @@ an unplugged dry kettle):
    - **1.00:** seated on `power_base` AND `boil_switch >= 0.35 rad` (blue LED lit).
    - **0.60:** seated on `power_base` AND `boil_switch < 0.35 rad` (safely transferred and docked, switch OFF).
    - **0.25:** resting upright (`<= 5 deg`, skirt underside within 6 mm of table top) at least 14 cm horizontally from
-     burner centre `(34.0, +11.5)` AND `boil_switch < 0.35 rad` (safely removed from burner, not docked).
+     burner centre `(34.0, +11.5)`, not seated, switch either way (safely removed from burner, not docked).
    - **0.00:** all other outcomes (left on burner, perched/tilted on power-base pillar, held airborne, or any violation).
+5. **Boil switch order is free:** the handle switch may be flipped ON at any time, on the burner, in the air or on the
+   table, before or after docking. A cordless kettle off its power base has no contact with mains power, so switching
+   it ON first and then seating it is a safe real-world sequence and still earns 1.00 once the kettle ends seated with
+   the switch ON and the burner dial never turned on. Only the burner dial is a whole-run latch.
 
 ## Real-world build
 
@@ -133,6 +143,16 @@ Nothing carrying the physical mechanism is custom: both appliances are inexpensi
   and power base at exact separation). Also needed: double-sided carpet tape or museum putty, painter's tape for bench
   alignment marks, and a strip of blue painter's tape or blue acetate behind the water window so the dry kettle reads
   visibly as filled.
+
+### Bill of materials (real trial)
+
+| Item | Source | Approx. price |
+| --- | --- | --- |
+| Hamilton Beach 40998 1.0 L cordless kettle with power base | Walmart, Target, Home Depot, Amazon | $25 to $30 |
+| Proctor Silex 34107 single electric burner | Home Depot, Walmart | about $22 |
+| Printed dummy outlet block and spacing jig (`fabricate.py`, about 120 g PLA) | any FDM printer | about $3 |
+| Double-sided carpet tape, painter's tape, blue acetate strip | hardware store | about $10 |
+| **Total** | | **about $60 to $65** |
 
 ### Assembly and shared-rig safety protocol
 

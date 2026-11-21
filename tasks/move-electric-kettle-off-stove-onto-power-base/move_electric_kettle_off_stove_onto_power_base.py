@@ -392,7 +392,6 @@ ARM_KEEP_OUT = [
 # ---------------------------------------------------------------------------------------------------------------------
 # Scoring thresholds (exact match to task.json and README.md)
 BURNER_DEBOUNCE_STEPS = 4  # 0.2 s at 20 Hz (brief twist of stove dial still fails)
-UNSEATED_SW_STEPS = 4  # 0.2 s at 20 Hz (flipping kettle switch ON off-base latches 0.0 for the whole run)
 TIP_DEBOUNCE_STEPS = 10  # 0.5 s at 20 Hz
 FINAL_HOLD_STEPS = 20  # 1.0 s settled & released at end of run
 
@@ -417,10 +416,8 @@ FORCE_RELEASED: list[bool | None] = [None]
 _ST: dict = {
     "last": None,
     "burner_run": 0,
-    "unseated_sw_run": 0,
     "tip_run": 0,
     "burner_viol": False,
-    "unseated_sw_viol": False,
     "tip_drop_viol": False,
     "settled_rel_run": 0,
     "tier": 0.0,
@@ -431,10 +428,8 @@ _ST: dict = {
 def _reset_state(env=None) -> None:
     _ST["last"] = None
     _ST["burner_run"] = 0
-    _ST["unseated_sw_run"] = 0
     _ST["tip_run"] = 0
     _ST["burner_viol"] = False
-    _ST["unseated_sw_viol"] = False
     _ST["tip_drop_viol"] = False
     _ST["settled_rel_run"] = 0
     _ST["tier"] = 0.0
@@ -514,15 +509,15 @@ def _on_step_lamps(env=None) -> None:
 def _instant_tier(burner_s, kettle_s) -> float:
     if _burner_dial_rad(burner_s) >= DIAL_ON_RAD:
         return 0.0
+    # The boil switch may be flipped ON at any time: a cordless kettle off its power base has no power, so switching
+    # it ON before docking is a safe order. Only the burner dial and the final pose decide the score.
     seated = kettle_seated(kettle_s)
     sw_on = _boil_switch_rad(kettle_s) >= SWITCH_ON_RAD
-    if sw_on and not seated:
-        return 0.0
     if seated and sw_on:
         return 1.0
-    if seated and not sw_on:
+    if seated:
         return 0.60
-    if kettle_off_burner(kettle_s) and not sw_on:
+    if kettle_off_burner(kettle_s):
         return 0.25
     return 0.0
 
@@ -536,17 +531,11 @@ def _update(objects) -> None:
     kettle_s = objects["kettle"]
 
     dial_on = _burner_dial_rad(burner_s) >= DIAL_ON_RAD
-    seated = kettle_seated(kettle_s)
-    sw_on = _boil_switch_rad(kettle_s) >= SWITCH_ON_RAD
 
     # 1. Whole-run violation latches
     _ST["burner_run"] = _ST["burner_run"] + 1 if dial_on else 0
     if _ST["burner_run"] >= BURNER_DEBOUNCE_STEPS:
         _ST["burner_viol"] = True
-
-    _ST["unseated_sw_run"] = _ST["unseated_sw_run"] + 1 if (sw_on and not seated) else 0
-    if _ST["unseated_sw_run"] >= UNSEATED_SW_STEPS:
-        _ST["unseated_sw_viol"] = True
 
     tilted = float(belimits.tilt_deg(kettle_s)) > TIP_VIOL_DEG
     _ST["tip_run"] = _ST["tip_run"] + 1 if tilted else 0
@@ -566,14 +555,14 @@ def _update(objects) -> None:
 
 
 def score(objects) -> float:
-    """0.0 for the whole run if burner_dial >= 0.25 rad for >= 0.2 s, boil_switch >= 0.35 rad while not seated on
-    POWER_BASE for >= 0.2 s, kettle tilt > 45 deg for >= 0.5 s, or kettle underside drops below TOP - 5 cm. Also 0.0 if
-    burner_dial >= 0.25 rad or unseated switch ON at end, or kettle not settled (< 15 mm/s, < 0.15 rad/s) and released
-    (>= 30 mm from both arms) for the final 1.0 s. Otherwise: 1.00 seated on POWER_BASE (<= 6 mm xy, <= 3 mm deck z,
+    """0.0 for the whole run if burner_dial >= 0.25 rad for >= 0.2 s, kettle tilt > 45 deg for >= 0.5 s, or kettle
+    underside drops below TOP - 5 cm. Also 0.0 if burner_dial >= 0.25 rad at end, or kettle not settled (< 15 mm/s,
+    < 0.15 rad/s) and released (>= 30 mm from both arms) for the final 1.0 s. The boil switch may be turned ON at any
+    time (off its base the kettle has no power). Otherwise: 1.00 seated on POWER_BASE (<= 6 mm xy, <= 3 mm deck z,
     <= 3 deg tilt) with boil_switch >= 0.35 rad; 0.60 seated on POWER_BASE with switch OFF; 0.25 upright (<= 5 deg) on
-    table >= 140 mm from burner centre with switch OFF; 0.00 all else."""
+    table >= 140 mm from burner centre, switch either way; 0.00 all else."""
     _update(objects)
-    if _ST["burner_viol"] or _ST["unseated_sw_viol"] or _ST["tip_drop_viol"]:
+    if _ST["burner_viol"] or _ST["tip_drop_viol"]:
         return 0.0
     if _ST["settled_rel_run"] < FINAL_HOLD_STEPS or _ST["tier_run"] < FINAL_HOLD_STEPS:
         return 0.0
