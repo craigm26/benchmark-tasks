@@ -1,0 +1,21 @@
+{
+  "title": "Open a flush push-to-open EV charge port door past 90 degrees and flip down its orange DC pin flap",
+  "category": "Societal relatability",
+  "keywords": [
+    "electric car",
+    "charge port door",
+    "push-push latch",
+    "flush handleless door",
+    "CCS1 inlet",
+    "recessed flap"
+  ],
+  "instruction": "Open the flush EV charge port door past 90 degrees, then flip down the inner orange DC pin flap and let go.",
+  "context": "Every EV driver at a DC fast charger opens a handleless push-to-open charge door and drops the CCS1 DC pin cover. The door has no handle: it must be pressed in to pop ajar, pinched by its narrow popped edge without pushing it shut again, swung wide, then the small recessed flap pulled down past its detent by a tab under the AC shroud.",
+  "setup": "Positions in cm from the midpoint between the arm bases (x forward, y left), heights above the table top. One fixed charge port mock-up (2017-2021 Chevrolet Bolt EV parts), clamped upright: glacial-blue painted fender panel (MDF, 25.6 wide x 19.8 tall x 1.4 cm, outer face at x 35.5, y -24.4 to +1.2) with a 17.6 x 18.1 cm opening (y -20.4 to -2.8, z 0.7 to 18.8) and a steel rear foot. In it the shut charge port door: blue painted ABS, 17.0 x 17.5 cm, 6 mm thick (dark inner face), flush with the fender face, 3 mm reveal all round, no handle, 180 g, on a vertical gooseneck hinge at its left edge (y -2.6), opening toward the robot to a 100 degree stop; a push-push latch plunger (grey, 15 mm cap) sits behind its right part at y -18.0, z 9.75. Behind it a matte charcoal pocket 4.6 cm deep holds an unwired CCS1 inlet (82 x 118 mm black flange, face 3.8 cm behind the fender face, centred y -12.1): silver J1772 AC shroud (43.8 mm across, 14 mm deep) at z 11.7, and below it a safety-orange plastic DC pin flap (60 wide x 40 tall x 5 mm, 25 g, hinged at its bottom edge, z 4.0) with a pull tab (22 wide x 12 tall, 16 mm proud) along its top edge, covering two 8 mm copper DC pins 32 mm apart at z 6.0.",
+  "scoring": "Every step; final state (real: overhead photo with a protractor at each hinge, plus video; open the grippers first). phi = door angle (0 shut, -100 at its stop), alpha = flap angle (0 shut, -100 folded down). Score 0 if the door or flap is forced past a stop (real: bent or broken), if the door was opened without first being pressed in so its latch popped it at least 6 degrees ajar (18 mm at its edge) (real: pried past the latch), or unless both hands are 3 cm clear of the door and flap and both are still (under 2 deg/s) for the last 1 s. Otherwise: 1.0 if phi <= -90 and alpha <= -85; 0.65 if phi <= -90 and alpha <= -45, or phi <= -75 and alpha <= -85; 0.45 if phi <= -90; 0.2 if phi <= -6 (popped or partly opened); else 0 (shut or re-latched). Possible scores: 0, 0.2, 0.45, 0.65, 1.0.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Fold the flap back up until it clicks shut, swing the door shut and press it once until it latches flush. Nothing is consumed; the inlet is unwired.",
+  "fidelity": "Approximate. The push-push latch is a sprung plunger (350 N/m) touching the door plus a scorer-side state machine: pressed past +2 deg it frees the door's hinge friction (0.90 to 0.04 N m), and on easing back it moves the plunger's spring rest so the plunger pops the door 12 deg ajar. The flap clicks shut or open by a detent spring. The sim scores the last step without opening the grippers; a finger within 3 cm of the door or flap scores 0.",
+  "scores": "Dream-1 run: 0 (right arm reached the panel and rested on it, door stayed shut); demo: 1 (right arm popped the door, swung it open, folded the orange flap down, then withdrew)",
+  "media": "M-GN54Z6"
+}
