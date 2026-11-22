@@ -1,0 +1,20 @@
+{
+  "title": "Take a milk delivery's temperature at receiving: flat probe slid down between two packed cartons, none lifted",
+  "category": "Impact on jobs",
+  "keywords": [
+    "food receiving",
+    "between-pack probe",
+    "packed cartons",
+    "wedge a seam",
+    "food safety"
+  ],
+  "instruction": "Take this milk delivery's temperature: slide the probe 3 to 7 cm down between two middle cartons, lifting or tipping none, hold it for the reading, then put it back.",
+  "context": "Food Code 3-202.11 cold-receiving check; school SOPs probe 'cartons of milk' between two items, never through one. O*NET tasks of food preparation workers (35-2021, ~0.9M) and institution cooks (35-2012, ~0.4M). Unlike probing into food (burger patty task), the blade wedges a closed seam between loose packed cartons and holds still.",
+  "setup": "Cm from the midpoint between the arm bases, x forward, y left. Milk crate: dark green HDPE 16 qt square milk crate, 33 x 33 x 27.9 cm outside (13 x 13 x 11 in, walls 1.25 cm), spanning x 9.5 to 42.5, y -16.5 to +16.5, open top. In it, two layers of 25 half-pint (236 mL) gable-top milk cartons, paperboard, 6.0 x 6.0 cm base, 9.5 cm body, 2.0 cm gable roof, ridge and 0.6 cm fin along x, 12.1 cm tall, 250 g each (water-filled). The lower layer is packed solid (tops 12.9 cm above the table). The top layer stands on it in 5 rows (centres x 13.8, 19.9, 26.0, 32.1, 38.2) by 5 columns (y -12.2, -6.1, 0, +6.1, +12.2), the crate's 5 mm of slack shared out: 0.8 mm between neighbours and at each wall. Shoulders 22.4 cm, fins 25.0 cm up. Probe: ThermoWorks Between Pack Probe (PRB-K-060), flattened stainless blade 12.7 x 0.38 x 0.20 cm (flat faces to the sides) with a rounded tip that thins over its last 1 cm, black handle 1.9 cm across, 10 cm long, 50 g, standing blade down in the holster, handle bottom 13.5 cm up. Probe holster: orange printed PLA block 4 x 4 x 13.5 cm at x 27, y -23.5, with a 1.2 cm round hole 13 cm deep. Nothing else on the table.",
+  "scoring": "Seam: between the facing walls of two cartons of the inner 3 x 3, the tip at least 1 cm in from their corners (wall gaps, outer-ring seams and a punctured carton never count). Depth: tip below the carton shoulders. Score 0 for the run if any carton's base rises 5 mm or more, or a carton tilts over 10 deg, for 3 control steps (0.15 s). Otherwise the best reached: 0.25 tip in a seam 1.5 cm or more deep; 0.5 tip in a seam 3 to 7 cm deep with the probe within 15 deg of vertical; 0.75 reading taken: 0.5 held with the tip moving under 3 mm for 15 s. 1.0: after the reading, the probe back in its holster (blade in the hole, handle on the block, within 10 deg of vertical), released (no finger within 3 cm), still for 2 s, every carton within 1 cm of its start. Real trial: tape bands 3 and 7 cm up the blade on side video; meter shows the reading; straightedge photo of carton tops for lift.",
+  "run_limit": "3,600 steps (3 minutes at 20 Hz)",
+  "reset_notes": "Reset the top-layer cartons to their grid with a 0.8 mm card strip in each seam and at the walls, then pull the strips; stand the probe in its holster. Cartons are half-pints refilled with 236 mL water and taped shut; wipe the blade between trials.",
+  "fidelity": "Cartons are rigid boxes with real gable roofs and a 2 mm shoulder chamfer; real paperboard gives, here the blade slides whole cartons apart within the crate's 5 mm row slack (0.8 mm per seam), with no squeeze-back. Lower layer fixed; crate grid walls solid. No temperature: the reading is a 15 s still hold at depth (maker: full reading under 15 s). Probe cord and meter not modelled. A probe still held at the end never counts as returned.",
+  "scores": "Dream-1 run: 0 (moved both arms forward beside the crate, never lifted the probe from its holster); demo: 1 (right arm took the probe, held it between cartons, returned it to the holster, backed off)",
+  "media": "M-TC6HTD"
+}
