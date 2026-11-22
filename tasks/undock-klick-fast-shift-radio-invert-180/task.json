@@ -1,0 +1,20 @@
+{
+  "title": "Invert a locked shift radio 180 degrees in its wall dock, lift it out, and stand it upright",
+  "category": "Impact on jobs",
+  "keywords": [
+    "anti-drop mount",
+    "180 degree release",
+    "Klick Fast dock",
+    "two-way radio",
+    "bimanual"
+  ],
+  "instruction": "Invert the shift radio 180 deg in the wall dock, slide it straight up free, and stand it upright on the green pad.",
+  "context": "Security guards (O*NET 33-9032.00, about 1.2 million), patrol officers (33-3051.00, 0.7 million) and correctional officers (33-3012.00, 0.4 million) dock and undock shift radios on anti-drop mounts at every shift change. A Klick Fast dock resists a pull forward or straight up and frees the radio only after a half turn about its stud, then a lift. Nearest accepted task: the bayonet cap (a quarter turn about the insertion axis). Here the turn is longer than one wrist can make, so the hands pass the radio over, then lift it out along another axis.",
+  "setup": "Positions are object centres in cm from the midpoint between the arm bases: x forward (away from the arms), y to the robot's left, z above the table top. Table: wood top, 110 x 130 cm, arm bases 61 cm apart. Console (fixed): dark-grey aluminium base 8 x 16 x 1.5 cm at x 32.8, y 0; light-grey aluminium panel 1.6 x 15 x 20 cm on it, front face at x 32.0. Dock (fixed, black nylon, Peter Jones Klick Fast Dock 05 FG-42-000013, 4.6 x 4.6 cm, 1.45 cm deep) on the panel face, centred y 0, axis 14.5 cm above the table: 4 mm backplate, two 5 mm side walls and a half-round cradle around a 36 mm wide channel open at the top, two 3 mm front lips leaving a 20 mm slot, an amber 6 x 6 x 4 mm lug on the backplate at the axis. Radio (loose, 132 g, Retevis H-777 style, ABS): graphite body 3.4 x 5.6 x 10.2 cm with a yellow 1.2 cm top cap, yellow side button, two silver 11 mm knobs, black 5.2 cm stubby antenna and a white front band, hanging upright, body centre x 28.5, y 0. On its back a Peter Jones Stick-On Stud FG-41-000076 (nylon: 3.28 x 3.98 cm base plate, 14 mm neck through the slot, 29 mm flange disc, C collar 17 / 30 mm, gate 90 degrees open at the top) rests in the cradle. Handover pad (fixed): matte green ABS 9 x 7 x 0.6 cm at x 22, y -13.5.",
+  "scoring": "Sustained = 10 steps (0.5 s). Zero for the whole run: the radio's lowest point goes 2 cm under the table top, or the stud is forced out forward through the lips (collar within 2 cm in front of x 30.4 cm, at dock height, not turned to within 30 deg of 180). Inverted: roll about the stud within 20 deg of 180 with the stud in the dock (within 12 mm of its axis). Freed: inverted earlier, stud over 2.6 cm above the dock axis or radio at x < 28.5 cm. On the pad: within 8 deg of upright, base within 3 mm of the pad top, centre within 2 cm of the pad centre. Released: grippers 3 cm clear, radio under 5 mm/s and 3 deg/s, last 2 s. Score: 0 if never inverted in the dock (a straight pull is 0); 0.25 inverted; 0.50 freed, released, still 2 s, not on the pad; 0.75 freed and on the pad, not released 2 s; 1.00 freed, on the pad, released, still 2 s.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Nothing is consumed. Hang the radio upright in the dock (stud down in the channel, neck in the slot), centre the pad on its marks, wipe nothing. About 10 s.",
+  "fidelity": "Approximate. Dock, stud and radio are rigid at product size with 1 to 3 mm of play; the product's flexing tongue and detent are a rigid lug and nylon friction (0.35 to 0.45). The sim cannot tell a gripped radio from a released one and scores the final step without opening the grippers: a radio held in the air is never on the pad (its base must be on the pad top) and never released.",
+  "scores": "Dream-1 run: 0 (left arm reached the dock, radio stayed mounted, right hand hovered near the pad); demo: 1 (both hands turned the radio in the dock, lifted it out, stood it on the pad, then parked)",
+  "media": "M-M7972X"
+}
