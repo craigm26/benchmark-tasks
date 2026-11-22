@@ -1,0 +1,21 @@
+{
+  "title": "Vacuum spilled lentils from under a kitchen toe kick with a swivel-head brush tool",
+  "category": "Societal relatability",
+  "keywords": [
+    "vacuuming",
+    "toe kick",
+    "swivel head",
+    "tool use",
+    "blind contact",
+    "household cleaning"
+  ],
+  "instruction": "Use the brush tool to vacuum up every spilled lentil, including those under the cabinet's toe kick, then set it down.",
+  "context": "Most people vacuum under kitchen cabinets. The 4 x 3 in toe kick hides spills in its back corner. The head swivels freely, so the wand cannot set its heading: pushed straight at the kick board it wedges; drawn along it lightly it turns flat. Unlike rolling paint on an open panel, this steers a free head blind under an overhang.",
+  "setup": "Positions in cm from the midpoint between the arm bases: x forward, y left, heights above the table top. Floor: slate grey vinyl panel, 6 mm thick, x 12 to 44, y -35 to +26. Cabinet: the bottom 18 cm of a 9 in (22.9 cm) wide white base cabinet, x 15.5 to 38.4, door face at y 16.0, standing on the floor; its toe-kick recess is 10.16 cm (4 in) high and 7.6 cm (3 in) deep, open at both ends, with a matte black 19 mm plywood kick board whose face is at y 23.6. Ten brown dried lentils, 5 mm across, 2.5 mm thick, on the floor: open floor at y 15.0, x 18.5, 24.5, 30.5; under the overhang at y 19.5, x 20, 26, 32; in the back corner against the kick board at y 22.5, x 18, 23.5, 29, 37.6 (the last 8 mm from the cabinet's far end). Brush tool: Milwaukee 49-90-2027 AIR-TIP Low-Profile Pivoting Brush Tool, red plastic, 495 mm long, 0.32 kg, pivot locked straight, head 81 x 55 x 24 mm on a 360 deg swivel with a 4 mm bristle skirt, 64 mm hose cuff. It lies flat with the head centre at x 37, y 15, the wand running back to the cuff centre at x 17.4, y -22.2, and the head turned 70 deg on its swivel from square to the wand. No hose.",
+  "scoring": "A lentil counts once when its centre stays at least 3 mm inside the head's 66 x 44 mm mouth for 3 control steps (0.15 s) while the head is flat (within 6 deg of level, bristle tips within 3 mm of the floor) and both grippers are at least 3 cm from the head. Score 0 if the head's centre leaves the floor panel at any step, or unless at the end the tool lies within 1 cm of the floor, moving under 5 mm/s, with both grippers at least 3 cm clear of it for the last 2 s. Of the 10 lentils (4 corner, 3 under the overhang, 3 open floor): 1.0 all 10; 0.75 at least 9 with at least 3 corner; 0.5 at least 7 with at least 2 corner; 0.25 at least 4 with at least 2 under the cabinet (overhang or corner); otherwise 0. Real trial: open the grippers, tip out the vacuum's canister and count the lentils, and check a front photo under the toe kick for any left.",
+  "run_limit": "3,600 steps (3 minutes at 20 Hz)",
+  "reset_notes": "Tip the canister out, put the same ten lentils back through the holes of the printed template butted against the kick board and the cabinet end, lift the template off, and lay the tool at its taped start outline with the head turned 70 deg.",
+  "fidelity": "Approximate. Suction is a rule: a lentil is taken when the flat mouth passes over it. Lentils are look-only; 5 mm grains are too small to simulate under a brush. The bristles are a rigid 4 mm skirt, friction 0.4; the swivel has 0.002 N m friction. The hose and suction downforce are omitted (no maker figure), so drag is the tool's weight on the skirt. A tool still held, or more than 1 cm off the floor, cannot score.",
+  "scores": "Dream-1 run: 0 (Right arm reached toward the tool, it stayed tilted, partly on the cabinet); demo: 1 (Right arm held the wand, dragged the brush head along the kick board, set it down)",
+  "media": "M-R5AH6M"
+}
