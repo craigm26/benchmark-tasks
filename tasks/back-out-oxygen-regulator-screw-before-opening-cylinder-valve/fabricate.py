@@ -9,8 +9,11 @@ writes ASCII STL files (standard library only; nothing is written on import):
   white band 14 to 22 mm up.
 - bench_plate.stl: the 160 x 160 x 16 mm plate the rig stands on, with four 6.5 mm holes for the floor flange's
   M6 bolts on a 70 mm square and four 5 mm corner holes for clamping to the bench.
-- witness_gauge.stl: a 6.4 mm thick U-shaped feeler (30 x 24 mm, 10.5 mm slot) for scoring: slid over the exposed
-  3/8 in stem against the locknut, it must fit under the T-handle hub once the screw is 6.4 mm out.
+- degree_ring.stl: the scoring ring under the handwheel, 90 mm across with a 34 mm bore, 3 mm thick, with raised
+  ticks every 15 degrees from 0 to 150 (the 0, 15 and 150 degree ticks run the full ring width). It lies on the shoulder
+  dome round the valve body (put it on before the valve is threaded in), 0 degrees under the handwheel's white stripe
+  when the valve is closed. Print in black PETG and paint the tick tops white; the trial video reads the stripe against
+  it to time the opening.
 
 The cylinder valve, regulator, flange, nipple and mannequin head are bought parts (see the README parts list).
 """
@@ -104,11 +107,23 @@ def plate_with_holes(size=160.0, thick=16.0, holes=None, sides=24):
     return tris
 
 
-def witness_gauge():
-    """U-shaped feeler, 6.4 mm thick: 30 x 24 mm with a 10.5 mm slot 16 mm deep that straddles the 3/8 in stem."""
-    t = 6.4
-    return (box_tris(0.0, 0.0, 0.0, 30.0, 6.75, t) + box_tris(0.0, 17.25, 0.0, 30.0, 24.0, t)
-            + box_tris(16.0, 6.75, 0.0, 30.0, 17.25, t))
+RING_R = (17.0, 45.0)  # mm, bore and outside radius (scene RING_R)
+RING_T = 3.0
+
+
+def _turn(tris, a):
+    c, s = math.cos(a), math.sin(a)
+    return [tuple((p[0] * c - p[1] * s, p[0] * s + p[1] * c, p[2]) for p in t) for t in tris]
+
+
+def degree_ring():
+    """The flat ring (a revolved rectangle) plus 0.6 mm raised ticks, 1.6 mm wide, every 15 deg from 0 to 150."""
+    tris = revolve([(RING_R[0], 0.0), (RING_R[1], 0.0), (RING_R[1], RING_T), (RING_R[0], RING_T)])
+    for k in range(11):
+        r0 = 33.0 if k in (0, 1, 10) else 38.0
+        tick = box_tris(r0, -0.8, RING_T - 0.01, RING_R[1] - 0.3, 0.8, RING_T + 0.6)
+        tris += _turn(tick, math.radians(15.0 * k))
+    return tris
 
 
 def main(out="."):
@@ -117,8 +132,8 @@ def main(out="."):
     bolt = [(35.0 * sx, 35.0 * sy, 3.25) for sx in (-1, 1) for sy in (-1, 1)]
     clamp = [(70.0 * sx, 70.0 * sy, 2.5) for sx in (-1, 1) for sy in (-1, 1)]
     _write(os.path.join(out, "bench_plate.stl"), "bench_plate", plate_with_holes(160.0, 16.0, bolt + clamp))
-    _write(os.path.join(out, "witness_gauge.stl"), "witness_gauge", witness_gauge())
-    print(f"wrote shoulder_dome.stl, bench_plate.stl, witness_gauge.stl to {os.path.abspath(out)}")
+    _write(os.path.join(out, "degree_ring.stl"), "degree_ring", degree_ring())
+    print(f"wrote shoulder_dome.stl, bench_plate.stl, degree_ring.stl to {os.path.abspath(out)}")
 
 
 if __name__ == "__main__":

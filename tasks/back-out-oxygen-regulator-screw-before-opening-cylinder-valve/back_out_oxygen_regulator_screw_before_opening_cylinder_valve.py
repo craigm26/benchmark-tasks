@@ -1,5 +1,5 @@
 """On the station table, slightly right of centre: the top of a green 20 cu ft medical oxygen cylinder (shoulder dome,
-brass CGA-540 cylinder valve with a black five-lobe handwheel on top) fixed to a charcoal steel bench plate. Its side
+brass CGA-540 cylinder valve with a black five-lobe handwheel on top, over a black degree ring) fixed to a charcoal steel bench plate. Its side
 outlet carries a brass single-stage oxygen regulator whose pressure-adjusting screw points at the robot: a brass
 T-handle on a threaded stem in front of a dark locknut, screwed all the way in (a red witness band shows in the 2 mm
 gap). Two 2-inch gauges stand on the regulator, faces toward the robot: the high-pressure contents gauge (green
@@ -78,10 +78,14 @@ BAR_DEPTH, BAR_LEN, BAR_THICK = 0.014, 0.064, 0.011  # T-handle crossbar: 14 mm 
 LEAD = 0.0015875  # 3/8-16 UNC, right hand: 1.5875 mm per turn
 SCREW_LOW = -0.0111  # 7 turns out: the end of the adjusting screw's thread
 SCREW_HIGH = 0.0005  # the screw is turned in to within 0.5 mm of its spring-solid stop
-BACKED_OUT = -0.0064  # m: 4.0 turns (6.4 mm) out unloads the regulator spring
+BACKED_OUT = -4 * LEAD  # m: 4.0 turns (6.35 mm) out; the start is calibrated 2.5 turns past spring contact (README),
+# so this leaves the spring 1.5 turns loose
 STARTED = -0.0020  # m: 1.26 turns out, the first partial credit
 VALVE_CRACK = math.radians(15.0)  # rad: the handwheel turned this far admits cylinder pressure
-VALVE_OPEN = 2.60  # rad (149 deg): open far enough for the contents gauge to read the tank
+VALVE_OPEN = math.radians(150.0)  # rad: open far enough for the contents gauge to read the tank
+SLOW_WINDOW_S = 0.5  # s: the opening-rate window
+SLOW_MAX = math.radians(15.0)  # rad: the handwheel may open at most this much within any 0.5 s (30 deg/s) below
+# VALVE_OPEN, so filling the regulator takes 5 s or more (open the valve slowly: adiabatic compression heating)
 NEEDLE_RATIO = 0.65  # contents gauge needle, rad per rad of handwheel (a visual for the pressure reading)
 NEEDLE_REST = -3 * math.pi / 4  # needle at zero points to the dial's lower left, seen from the robot
 
@@ -147,12 +151,31 @@ def _needle_shapes(length=0.019, o=(0.0, 0.0, 0.0)):
 
 LP_NEEDLE = list(_needle_shapes(0.017, _rel((DIAL_X - 0.0015, LP_GAUGE[1], LP_GAUGE[2]))))
 
+RING_Z, RING_R = 0.082, (0.017, 0.045)  # printed degree ring on the neck, under the handwheel (look only)
+
+
+def _ring_ticks():
+    """White ticks every 15 deg from the handwheel's closed stripe (+x) counter-clockwise to 150 deg; the 0, 15 and
+    150 deg ticks run the full ring width, the rest are short."""
+    out = []
+    for k in range(11):
+        a = math.radians(15.0 * k)
+        long = k in (0, 1, 10)
+        r0 = 0.033 if long else 0.038
+        rm, ln = (r0 + RING_R[1]) / 2, RING_R[1] - r0
+        out.append(_look(box((rm * math.cos(a), rm * math.sin(a), RING_Z + 0.0031), (ln, 0.0016, 0.0004), WHITE,
+                             tilt=_qz(a))))
+    return out
+
+
 DOME = [(0.0665, 0.0), (0.0640, 0.016), (0.0570, 0.032), (0.0460, 0.046), (0.0340, 0.058), (0.0240, 0.066)]
 
 RIG_SHAPES = [
     box((0.0, 0.0, 0.008), (0.160, 0.160, 0.016), CHARCOAL),  # bench plate
     lathe((0.0, 0.0, 0.016), DOME, O2_GREEN),  # cylinder shoulder (133 mm OD), neck at 48 mm
     _look(lathe((0.0, 0.0, 0.030), [(0.0644, 0.0), (0.0615, 0.009)], WHITE)),  # white oxygen band on the shoulder
+    _look(tube((0.0, 0.0, RING_Z + 0.0015), RING_R[0], RING_R[1], 0.003, DARK)),  # degree ring (printed, black)
+    *_ring_ticks(),
     cyl((0.0, 0.0, 0.112), 0.016, 0.060, BRASS),  # valve body
     cyl((0.0, 0.0, 0.147), 0.012, 0.010, BRASS, sides=6),  # packing nut
     _look(cyl((0.0, 0.0, 0.156), 0.004, 0.010, SILVER)),  # valve stem
@@ -174,12 +197,15 @@ RIG_SHAPES = [
 
 # The T-handle: hub, crossbar and threaded stem ride on the screw. The screw's origin is on its axis at the hub's back
 # face; the stem reaches back into the bonnet, with a red band in the first 2.5 mm behind the hub (visible while the
-# screw is in) and a green band 8.4 to 11.4 mm behind it, which clears the locknut face once the screw is 6.4 mm out.
+# screw is in) and a green witness band 6.85 to 8.35 mm behind it, painted at calibration on the 1.5 mm of stem just in
+# front of the locknut face with the screw exactly 4 turns out: the whole band shows only once the screw is 4 turns out.
 BAR_OUTLINE = [(-BAR_THICK / 2, -BAR_DEPTH / 2 + 0.0015), (-BAR_THICK / 2 + 0.0015, -BAR_DEPTH / 2),
                (BAR_THICK / 2 - 0.0015, -BAR_DEPTH / 2), (BAR_THICK / 2, -BAR_DEPTH / 2 + 0.0015),
                (BAR_THICK / 2, BAR_DEPTH / 2 - 0.0015), (BAR_THICK / 2 - 0.0015, BAR_DEPTH / 2),
                (-BAR_THICK / 2 + 0.0015, BAR_DEPTH / 2), (-BAR_THICK / 2, BAR_DEPTH / 2 - 0.0015)]  # (z, x) section
 STEM_R = 0.0048
+_GAP4 = LOCKNUT_X[0] - (HUB_BACK_X - 4 * LEAD)  # hub-to-locknut gap with the screw 4 turns out (8.35 mm)
+GREEN_BAND = (_GAP4 - 0.0015, _GAP4)  # m behind the hub's back face (screw frame +x)
 T_SHAPES = [
     cyl((-HUB_LEN / 2, 0.0, 0.0), HUB_R, HUB_LEN, BRASS, axis="x"),
     extrude((-HUB_LEN - BAR_DEPTH / 2, 0.0, 0.0), BAR_OUTLINE, BAR_LEN, BRASS, axis="y"),
@@ -187,7 +213,8 @@ T_SHAPES = [
                                                                                          0.0006), WHITE)),
     _look(cyl((0.020, 0.0, 0.0), STEM_R, 0.040, SILVER, axis="x")),
     _look(cyl((0.00125, 0.0, 0.0), STEM_R + 0.0003, 0.0025, RED, axis="x")),
-    _look(cyl((0.0099, 0.0, 0.0), STEM_R + 0.0003, 0.0030, GREEN, axis="x")),
+    _look(cyl(((GREEN_BAND[0] + GREEN_BAND[1]) / 2, 0.0, 0.0), STEM_R + 0.0003, GREEN_BAND[1] - GREEN_BAND[0], GREEN,
+              axis="x")),
 ]
 T_CARRIER, T_HANDLE = screw("t_handle", T_SHAPES, lead=LEAD, axis="x", at=(HUB_BACK_X - RIG_POS[0], REG_Y, REG_Z),
                             low=SCREW_LOW, high=SCREW_HIGH, hold=0.25, mass=0.070)
@@ -253,7 +280,8 @@ def _released(objects) -> bool:
 
 
 def _fresh():
-    return {"last": None, "prev": None, "crack": 0, "blowout": False, "still": 0.0, "clear": False}
+    return {"last": None, "prev": None, "crack": 0, "blowout": False, "fast": False, "hist": [], "still": 0.0,
+            "clear": False}
 
 
 _S = _fresh()
@@ -293,6 +321,12 @@ def _track(objects) -> None:
             _S["blowout"] = True
     else:
         _S["crack"] = 0
+    hist = _S["hist"]  # the handwheel's last 0.5 s of readings, this step included
+    hist.append(wheel(rig))
+    del hist[:-(round(SLOW_WINDOW_S / STEP_S) + 1)]
+    low = min(hist)
+    if min(wheel(rig), VALVE_OPEN) - low > SLOW_MAX:  # only the opening below 150 deg counts
+        _S["fast"] = True
     _S["clear"] = _released(objects)
     if _S["prev"] is not None:
         still = bool(np.all(np.abs(q - _S["prev"]) / STEP_S < STILL_RAD_S))
@@ -306,11 +340,12 @@ def touched_technician() -> bool:
 
 def score(objects):
     """Whole run: 0 if the handwheel was ever 15 deg or more open (3 steps running) while the adjusting screw was less
-    than 6.4 mm (4 turns) out, or a finger pad touched the technician. At the end: 0 if the screw is under 2.0 mm out;
-    0.25 if 2.0 to 6.4 mm out; 0.5 once 6.4 mm out; 0.75 once also the handwheel is at least 149 deg open and both
-    hands are 5 cm clear of the rig; 1.0 once that has held, with both joints still, for 2 s."""
+    than 6.35 mm (4 turns) out, or it opened more than 15 deg within any 0.5 s while under 150 deg open (not slowly),
+    or a finger pad touched the technician. At the end: 0 if the screw is under 2.0 mm out; 0.25 if 2.0 to 6.35 mm out;
+    0.5 once 4 turns out; 0.75 once also the handwheel is at least 150 deg open and both hands are 5 cm clear of the
+    rig; 1.0 once that has held, with both joints still, for 2 s."""
     _track(objects)
-    if _S["blowout"] or touched_technician():
+    if _S["blowout"] or _S["fast"] or touched_technician():
         return 0.0
     rig = objects["o2_rig"]
     t = travel(rig)
@@ -368,6 +403,30 @@ def _yaw_steps(arm, z, y0, y1, seconds):
         yield from arm.move((VALVE_XY[0], VALVE_XY[1], z), 0.05, yaw=y0 + (y1 - y0) * s)
 
 
+VALVE_RATE = 0.30  # rad/s (17 deg/s): 8.6 deg per 0.5 s, under the 15 deg the scorer allows
+RAMP_S = 0.8  # s to reach and leave VALVE_RATE
+
+
+def _yaw_slow(arm, z, y0, y1, rate=VALVE_RATE, ramp=RAMP_S):
+    """Turn the gripped handwheel at a steady rate (trapezoid profile), one control step at a time."""
+    d = y1 - y0
+    cruise = max(0.0, abs(d) / rate - ramp)  # a trapezoid with ramps of `ramp` covers rate x (cruise + ramp)
+    total = cruise + 2 * ramp
+    n = max(1, round(total * 20))
+    vmax = abs(d) / (cruise + ramp)
+
+    def dist(t):
+        if t < ramp:
+            return 0.5 * vmax * t * t / ramp
+        if t < ramp + cruise:
+            return 0.5 * vmax * ramp + vmax * (t - ramp)
+        u = total - t
+        return abs(d) - 0.5 * vmax * u * u / ramp
+
+    for i in range(1, n + 1):
+        yield from arm.move((VALVE_XY[0], VALVE_XY[1], z), 0.05, yaw=y0 + math.copysign(dist(i * total / n), d))
+
+
 def _left_unload(ctx):
     """Left hand: grip the T-handle's crossbar from the front and back the screw out twelve half turns."""
     L = ctx.left
@@ -408,7 +467,7 @@ def _right_open(ctx):
             if R.holding(0.050):  # pads stopped on the 63.5 mm wheel
                 break
             yield from R.grip(FINGER_OPEN, 0.4)
-        yield from _yaw_steps(R, WHEEL_GRIP_Z, YAW_FROM, YAW_FROM + turn, max(1.5, turn / 0.75))
+        yield from _yaw_slow(R, WHEEL_GRIP_Z, YAW_FROM, YAW_FROM + turn)
         yield from R.grip(FINGER_OPEN, 0.5)
         yield from R.move(hover, 0.8, yaw=YAW_FROM + turn)
         yield from _yaw_steps(R, WHEEL_HOVER_Z, YAW_FROM + turn, YAW_FROM, 1.6)
@@ -418,7 +477,7 @@ def _right_open(ctx):
 
 def demo_script(ctx):
     """Left arm backs the regulator's adjusting screw out six turns and parks; only then does the right arm open the
-    cylinder valve 240 deg and park. Both hands end open at their ready poses, clear of the rig and the technician."""
+    cylinder valve about 240 deg at a steady 17 deg/s and park. Both hands end open at their ready poses, clear of the rig and the technician."""
     yield from _left_unload(ctx)
     yield from _right_open(ctx)
     yield from ctx.wait(12.0)
