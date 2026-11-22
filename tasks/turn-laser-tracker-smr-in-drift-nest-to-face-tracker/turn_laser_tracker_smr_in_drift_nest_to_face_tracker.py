@@ -1,5 +1,5 @@
 """A laser tracker target on a robot's base plate, at full size. A blue-grey steel base plate carries the base casting
-of a new robot arm (its J1 housing, no arm fitted yet) and a Brunson 1.5THDN magnetic drift nest. In the nest sits a
+of a new robot arm (its J1 housing, no arm fitted yet) and a Brunson 1.5THDN magnetic drift nest (black anodized aluminium, 40.6 mm across, a magnet under its land). In the nest sits a
 1.5 in (38.1 mm) spherically mounted retroreflector (SMR): a polished steel ball with an open cube-corner face (black,
 22 mm across) ringed in red. The SMR faces left and 60 degrees up, toward where the tracker stood. The tracker has
 moved to the front: a grey post 18 cm in front of the nest carries a laser pointer in a yoke, aimed back at the ball
@@ -39,7 +39,7 @@ SUCCESS_HOLD_S = 8.0
 PLATE_C = (0.42, 0.48, 0.56)      # painted blue-grey steel base plate
 CAST = (0.22, 0.23, 0.25)         # robot base casting
 COVER = (0.05, 0.05, 0.06)        # J1 cover
-OXIDE = (0.07, 0.07, 0.08)        # black oxide nest
+OXIDE = (0.07, 0.07, 0.08)        # black anodized aluminium nest
 STEEL = (0.86, 0.87, 0.89)        # polished SMR ball
 FACE = (0.01, 0.01, 0.01)         # open cube-corner face
 RED = (0.85, 0.06, 0.06)          # SMR red ring, pointer emitter
@@ -59,14 +59,14 @@ ROBOT = Mech("robot_base", pos=(*ROBOT_XY, TOP + PLATE_T), mass=None,
 NEST_XY = (0.24, -0.06)
 R_BALL = 0.01905                  # 1.5 in SMR
 CENTRE_H = 0.0286                 # 1.125 in: SMR centre above the nest foot (Brunson 1.5THDN)
-NEST_R, NEST_H = 0.022, 0.013     # cup outside radius, rim height above the foot
+NEST_R, NEST_H = 0.0203, 0.0127   # Brunson 1.5THDN: 1.600 in across, 0.5 in tall (maker page)
 CENTRE = np.array([NEST_XY[0], NEST_XY[1], TOP + PLATE_T + CENTRE_H])    # ball centre, world
 APERTURE_R = 0.011                # open cube corner 22 mm across
 FACE_Z = math.sqrt(R_BALL ** 2 - APERTURE_R ** 2)                        # 15.55 mm: the face plane from the centre
 EL0 = math.radians(60.0)          # start elevation of the face (fixed layout); start azimuth +y (yaw joint 0)
 LIFT_K = 3000.0                   # N/m: magnet pull modelled as a spring to the seat (9 N at 3 mm)
 TURN_HOLD = 0.02                  # N m: seat friction against turning (yaw and tilt)
-BALL_MASS = 0.150
+BALL_MASS = 0.150                 # FARO 1.5 in standard SMR, 440C housing: 150 g (FARO SMR specifications)
 
 
 def _qx(a):
@@ -75,7 +75,7 @@ def _qx(a):
 
 
 def _nest_shapes():
-    """Fixed nest in the Mech frame (origin on the plate top under the ball centre): a black oxide cup with a
+    """Fixed nest in the Mech frame (origin on the plate top under the ball centre): a black anodized aluminium cup with a
     floor, a 12.5 mm bore (1.5 mm round the ball at the rim) and three look-only land balls on a 45 degree cone."""
     out = [cyl((0.0, 0.0, 0.004), NEST_R, 0.008, OXIDE),
            ring_profile((0.0, 0.0, 0.008), [(0.0125, NEST_R, 0.0), (0.0125, NEST_R, NEST_H - 0.008)], OXIDE)]
@@ -123,9 +123,9 @@ NEST = Mech(
         Joint("lift", "slide", SPACER, axis="z", at=(0.0, 0.0, CENTRE_H), low=0.0, high=0.005, spring=LIFT_K,
               damping=20.0, mass=0.004),
         Joint("yaw", "hinge", SPACER, axis="z", at=(0.0, 0.0, 0.0), low=-3.2, high=3.2, parent="lift",
-              hold=TURN_HOLD, hold_moving=0.016, damping=0.002, mass=0.004, armature=2e-6),
+              hold=TURN_HOLD, hold_moving=0.8 * TURN_HOLD, damping=0.002, mass=0.004, armature=2e-6),
         Joint("tilt", "hinge", tuple(_smr_shapes()), axis="x", at=(0.0, 0.0, 0.0), low=TILT_LOW, high=TILT_HIGH,
-              parent="yaw", hold=TURN_HOLD, hold_moving=0.016, damping=0.002, mass=BALL_MASS - 0.008,
+              parent="yaw", hold=TURN_HOLD, hold_moving=0.8 * TURN_HOLD, damping=0.002, mass=BALL_MASS - 0.008,
               friction=0.5, armature=2e-6),
     ],
 )
@@ -278,13 +278,14 @@ ARM_KEEP_OUT = [
 
 # -- the scripted demo (right arm only; the left arm holds READY) -----------------------------------------------------------
 demo = placeholder_demo
-PINCH_UP = 0.005                  # tool point 5 mm above the centre: pad tips 8 mm above the cup rim
+PINCH_UP = 0.005                  # tool point 5 mm above the centre: pad tips 6 mm above the cup rim
 TIP = 0.013                       # closed fingertips reach 13 mm past the tool point
 PHI0 = math.radians(125.0)        # roll contact: 35 deg behind top dead centre, in the face's vertical plane
 PRESS = 0.005                     # press 5 mm past the surface
 YAW_GOAL = BEAR_AZ - math.pi / 2  # yaw joint value that turns the face from +y to the bearing
 TILT_GOAL = BEAR_EL - EL0         # tilt joint value that brings the face down to the bearing's elevation
 TILT_OVER = math.radians(5.0)     # roll 5 deg past it: the ball springs back a little as the finger leaves
+TILT_REDO = math.radians(4.0)     # still more than 4 deg short of the goal after the finger leaves: roll again
 
 
 def _wrap(a):
@@ -347,36 +348,47 @@ def demo_script(ctx):
         a = rot @ np.array([0.0, 0.0, 1.0])
         return CENTRE + (R_BALL - depth) * n - TIP * a, rot
 
-    p, r = tip_pose(PHI0, -0.03)
-    yield from R.move(p + [0.0, 0.0, 0.03], 2.5, rot=r)
-    yield from R.move(p, 1.2, rot=r)
-    yield from R.trim_to_measured(p)
-    p3, _ = tip_pose(PHI0, -0.003)
-    a = r @ np.array([0.0, 0.0, 1.0])
-    res = yield from R.press_until(p3, max_depth=0.003 + PRESS + 0.001, err_mm=4.0, min_depth=0.003 + 0.002,
-                                   direction=a, rot=r)
-    depth = min(PRESS, max(0.002, res.depth - 0.003))
     tilt = read("tilt", 0.0)
-    lead = math.radians(6.0)
     phi_cmd = PHI0
-    for _ in range(500):
-        tilt = read("tilt", tilt)
-        if R.offline:
-            tilt = phi_cmd - PHI0
-        if tilt <= TILT_GOAL - TILT_OVER:
+    for _stroke in range(3):                # a short or sprung-back roll gets another stroke from behind
+        if _stroke and tilt <= TILT_GOAL + TILT_REDO:
             break
-        phi_mat = PHI0 + tilt                # the ball point first touched, carried round with the ball
-        stalled = phi_cmd < phi_mat - lead + 1e-9
-        lead = min(math.radians(20.0), lead + math.radians(0.15)) if stalled else lead
-        phi_cmd = max(phi_cmd - math.radians(0.6), phi_mat - lead, TILT_GOAL - TILT_OVER + PHI0 - math.radians(3.0))
-        p, r = tip_pose(phi_cmd, depth)
-        yield from R.move(p, 1.0 / 20.0, rot=r)
-    yield from R.hold(0.5)
-    p, r = tip_pose(phi_cmd, 0.0)           # ease the press off before backing away
-    yield from R.move(p, 1.0, rot=r)
-    # 3. Back off along the normal, rise and park.
-    p_off, r = tip_pose(phi_cmd, -0.03)
-    yield from R.move(p_off, 1.2, rot=r)
+        stop = TILT_GOAL - (TILT_OVER if _stroke == 0 else 0.0)
+        phi0 = PHI0 if _stroke == 0 else PHI0 + math.radians(10.0)   # touch the ball behind its current top
+        p, r = tip_pose(phi0, -0.03)
+        yield from R.move(p + [0.0, 0.0, 0.03], 2.5 if _stroke == 0 else 1.5, rot=r)
+        yield from R.move(p, 1.2, rot=r)
+        yield from R.trim_to_measured(p)
+        p3, _ = tip_pose(phi0, -0.003)
+        a = r @ np.array([0.0, 0.0, 1.0])
+        res = yield from R.press_until(p3, max_depth=0.003 + PRESS + 0.001, err_mm=4.0, min_depth=0.003 + 0.002,
+                                       direction=a, rot=r)
+        depth = min(PRESS, max(0.002, res.depth - 0.003))
+        tilt0 = tilt = read("tilt", tilt)
+        lead = math.radians(6.0)
+        phi_cmd = phi0
+        for _ in range(500):
+            tilt = read("tilt", tilt)
+            if R.offline:
+                tilt = tilt0 + phi_cmd - phi0
+            if tilt <= stop:
+                break
+            phi_mat = phi0 + tilt - tilt0    # the ball point first touched, carried round with the ball
+            stalled = phi_cmd < phi_mat - lead + 1e-9
+            lead = min(math.radians(20.0), lead + math.radians(0.15)) if stalled else lead
+            phi_cmd = max(phi_cmd - math.radians(0.6), phi_mat - lead, stop + phi0 - tilt0 - math.radians(3.0))
+            p, r = tip_pose(phi_cmd, depth)
+            yield from R.move(p, 1.0 / 20.0, rot=r)
+        # stop the finger on the ball point it is touching now (drop the lead that would carry the ball on), unloaded
+        phi_cmd = max(phi_cmd, phi0 + tilt - tilt0) if not R.offline else phi_cmd
+        p, r = tip_pose(phi_cmd, 0.0)
+        yield from R.move(p, 0.6, rot=r)
+        yield from R.hold(0.5)
+        p_off, r = tip_pose(phi_cmd, -0.03)     # back off along the normal and let the ball settle
+        yield from R.move(p_off, 1.2, rot=r)
+        yield from R.hold(0.5)
+        tilt = read("tilt", stop)
+    # 3. Rise and park.
     yield from R.move(CENTRE + [-0.04, 0.0, 0.15], 2.5, rot=r)
     yield from R.home(4.5)
     yield from ctx.wait(3.0)
