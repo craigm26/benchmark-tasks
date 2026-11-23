@@ -5,16 +5,18 @@ Run:  python3 fabricate.py [out_dir]   writes ASCII STL files in mm. Nothing is 
 
 Every size comes from the scene (transfer_exposed_die_fcbga_with_bent_vacuum_pen.py), which copies the Entegris
 H44-999-62C02 4 in STAT-PRO 3 x 3 waffle pack (101.6 x 101.6 x 6.5 mm, 25.32 mm pockets, 30.8 mm pitch), the AMD/Xilinx
-SBG484 lidless FCBGA (19 x 19 x 2.5 mm, 14 x 14 mm bare die) and an open-top 19 mm BGA test-socket nest of the Enplas /
-Ironwood drop-in type.
+SBG484 lidless FCBGA (19 x 19 x 2.5 mm with a 3.5 mm 45-deg pin-1 chamfer, 14 x 14 mm bare die) and an open-top 19 mm
+BGA test-socket nest of the Enplas OTB-484 / Ironwood SG-BGA 19 mm class.
 
   waffle_pack.stl  ESD (carbon-loaded) PETG: the 3 x 3 pack, 3.2 mm floor, 3.3 mm walls, nine 25.32 mm pockets.
                    Print upright, 0.15 mm layers, 100 % walls. Use it only if a surplus H44-999-62C02 is not at hand.
-  chip_dummy.stl   the SBG484 stand-in: a 19 x 19 x 1.75 mm substrate with a 14 x 14 x 0.75 mm die plate on top. Print the
-                   substrate green, glue a 14 x 14 x 0.75 mm polished silicon offcut or aluminium shim on top, and add
-                   steel shim under the substrate until it weighs 5.0 g (the real chip's mass).
-  test_socket.stl  PEEK-look PETG nest: 56 x 56 x 10 mm, 25 x 25 mm floor, 2 mm vertical wall, 45 degree funnel to a 33 mm
-                   mouth.
+  chip_dummy.stl   the SBG484 stand-in: a 19 x 19 x 1.75 mm substrate with a 3.5 mm 45-degree pin-1 corner chamfer at
+                   (-x, -y) and a 14 x 14 x 0.75 mm die plate on top. Print the substrate green, glue a 14 x 14 x 0.75 mm
+                   polished silicon offcut or aluminium shim on top, and add steel shim under the substrate until it
+                   weighs 5.0 g (the real chip's mass).
+  test_socket.stl  PEEK-look PETG nest: 38 x 38 x 10 mm, 19.5 x 19.5 mm locating pocket (0.25 mm/side clearance), 2.5 mm
+                   vertical walls with a 3.65 mm 45-degree pin-1 corner key at (-x, -y), and a 45 degree lead-in funnel
+                   to a 26.5 mm mouth.
   pen_cradle.stl   Slate PETG bench cradle: 110 x 40 x 3 mm base, two 10 mm V saddles 100 mm apart (90 mm clear between),
                    barrel axis 41 mm above the mat, rear stop 4 mm behind the barrel end.
 
@@ -27,8 +29,9 @@ import sys
 
 # ---- scene dimensions, mm ------------------------------------------------------------------------------------------
 PACK, POCKET, PITCH, FLOOR_T, RIB_H = 101.6, 25.32, 30.8, 3.2, 3.3
-CHIP_A, SUB_T, DIE_A, DIE_T = 19.0, 1.75, 14.0, 0.75
-SOCK, OPEN_HALF, MOUTH_HALF, WALL_Z0, WALL_Z1, FUN_Z0 = 56.0, 12.5, 16.5, 4.0, 10.0, 6.0
+CHIP_A, SUB_T, DIE_A, DIE_T, CHAMFER = 19.0, 1.75, 14.0, 0.75, 3.5
+SOCK, OPEN_HALF, MOUTH_HALF, WALL_Z0, WALL_Z1, FUN_Z0 = 38.0, 9.75, 13.25, 4.0, 10.0, 6.5
+KEY_LEG = 3.65
 BASE_T = 4.0  # socket base block
 CRADLE_X, CRADLE_Y, CRADLE_T = 110.0, 40.0, 3.0
 SADDLE_U, SADDLE_T, AXIS_H, BARREL_R = 50.0, 10.0, 41.0, 6.35
@@ -92,6 +95,20 @@ def prism_x(poly_yz, x0, x1):
 
 
 
+def prism_z(poly_xy, z0, z1):
+    """Closed prism: a convex (x, y) polygon, counter-clockwise seen from +z, extruded from z0 to z1."""
+    n = len(poly_xy)
+    tris = []
+    for a in range(1, n - 1):
+        p, q, r = poly_xy[0], poly_xy[a], poly_xy[a + 1]
+        tris.append(((*p, z1), (*q, z1), (*r, z1)))
+        tris.append(((*p, z0), (*r, z0), (*q, z0)))
+    for a in range(n):
+        p, q = poly_xy[a], poly_xy[(a + 1) % n]
+        tris += [((*p, z0), (*q, z0), (*q, z1)), ((*p, z0), (*q, z1), (*p, z1))]
+    return tris
+
+
 def swap_xy(tris):
     """Mirror a mesh across the plane x = y (swap the two axes) and keep it outward by reversing each triangle."""
     return [tuple((p[1], p[0], p[2]) for p in (t[0], t[2], t[1])) for t in tris]
@@ -109,8 +126,10 @@ def waffle_pack():
 
 
 def chip_dummy():
-    return [grid_solid([(-CHIP_A / 2, -CHIP_A / 2, 0.0, CHIP_A / 2, CHIP_A / 2, SUB_T),
-                        (-DIE_A / 2, -DIE_A / 2, SUB_T, DIE_A / 2, DIE_A / 2, SUB_T + DIE_T)])]
+    h = CHIP_A / 2
+    sub_poly = [(-h + CHAMFER, -h), (h, -h), (h, h), (-h, h), (-h, -h + CHAMFER)]
+    die = grid_solid([(-DIE_A / 2, -DIE_A / 2, SUB_T, DIE_A / 2, DIE_A / 2, SUB_T + DIE_T)])
+    return [prism_z(sub_poly, 0.0, SUB_T), die]
 
 
 def test_socket():
@@ -119,8 +138,9 @@ def test_socket():
     # walls on +-y: a (y, z) profile pushed along x; on +-x: the same profile with the axes swapped
     prof = [(OPEN_HALF, WALL_Z0), (h, WALL_Z0), (h, WALL_Z1), (MOUTH_HALF, WALL_Z1), (OPEN_HALF, FUN_Z0)]
     mirror = [(-y, z) for y, z in reversed(prof)]
+    key_poly = [(-OPEN_HALF, -OPEN_HALF), (-OPEN_HALF + KEY_LEG, -OPEN_HALF), (-OPEN_HALF, -OPEN_HALF + KEY_LEG)]
     shells = [base, prism_x(prof, -h, h), prism_x(mirror, -h, h)]
-    shells += [swap_xy(prism_x(prof, -h, h)), swap_xy(prism_x(mirror, -h, h))]
+    shells += [swap_xy(prism_x(prof, -h, h)), swap_xy(prism_x(mirror, -h, h)), prism_z(key_poly, WALL_Z0, FUN_Z0)]
     return shells
 
 

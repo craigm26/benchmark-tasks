@@ -1,14 +1,17 @@
 """On the station table, an ESD bench mat. On it, a black four-inch waffle pack (Entegris H44-999-62C02 class, nine
-pockets) with one lidless exposed-die FCBGA chip (19 x 19 x 2.5 mm, bare 14 x 14 mm silicon die on top) lying in its
-centre pocket, 0.8 mm below the pocket rim, with no edge to grip. Beside it an open-top BGA test-socket nest (ivory, with
-a 45 degree funnel), and on the far side a slate bench cradle holding a Virtual Industries PEN-VAC V8901-A-ESD vacuum pen
-(12.7 mm barrel, 45 degree bent probe, 9.53 mm silicone cup, side push-button) horizontally.
+pockets) with one lidless exposed-die FCBGA chip (AMD/Xilinx SBG484 class: 19 x 19 x 2.5 mm with a 3.5 mm 45-degree
+pin-1 corner chamfer, bare 14 x 14 mm silicon die on top) lying in its centre pocket, 0.8 mm below the pocket rim, with
+no edge to grip. Beside it a keyed open-top BGA test-socket nest (Enplas OTB / Ironwood 19 mm class, ivory PEEK,
+19.5 x 19.5 mm locating pocket with pin-1 corner key and 45-degree funnel), and on the far side a slate bench cradle
+holding a Virtual Industries PEN-VAC V8901-A-ESD vacuum pen (12.7 mm barrel, 45 degree bent probe, 9.53 mm silicone cup,
+side push-button) horizontally.
 
 The robot must use the pen as a person does: one hand holds the pen pitched 45 degrees so the cup is flat above the die,
-the other hand squeezes the side button BEFORE touchdown (this expels the bellows), the cup is brought flat onto the die,
-and the button is released to draw the vacuum. The chip is lifted clear of the pocket walls, carried over the socket and
-lowered to hover 4 mm above its floor, the button is squeezed again to break the vacuum (the chip drops flat into the nest)
-and the pen is put back on its cradle. A gripper pad touching the chip, a drop, or a pen off the table scores 0.
+the other hand squeezes the side button BEFORE touchdown (this expels the bellows), the cup makes actual contact and
+presses onto the die (>= 0.6 N for >= 0.20 s) before the button is released to draw the vacuum. The chip is lifted clear
+of the pocket walls, transferred under suction over the socket and lowered to hover 4 mm above its floor with pin-1
+corners aligned, the button is squeezed again to break the vacuum (the chip drops flat and keyed into the nest) and the
+pen is put back on its cradle. A gripper pad touching the chip, a drop, or a pen off the table scores 0.
 
 Requires -E object_jitter=0 (fixed layout).
 
@@ -34,6 +37,7 @@ from mechkit import (  # noqa: E402
 from yam_arena import ik  # noqa: E402
 from yam_arena.constants import FINGER_CLOSED, FINGER_OPEN  # noqa: E402
 from yam_arena.task_file import TABLE_TOP, Box  # noqa: E402
+from yam_arena.urdf import quat_xyzw_to_matrix  # noqa: E402
 
 SCENE = "station"
 TOP = TABLE_TOP[SCENE]
@@ -84,31 +88,40 @@ WAFFLE = Mech("waffle_pack", pos=(WAFFLE_XY[0], WAFFLE_XY[1], Z_MAT), mass=None,
               shapes=[box((0, 0, FLOOR_T / 2), (PACK, PACK, FLOOR_T), CHARCOAL), *_ribs])
 POCKET_CENTRES = [(WAFFLE_XY[0] + i * PACK_PITCH, WAFFLE_XY[1] + j * PACK_PITCH) for i in (-1, 0, 1) for j in (-1, 0, 1)]
 
-# AMD/Xilinx SBG484 lidless FCBGA: 19 x 19 mm substrate 1.75 mm thick (balls under it are not modelled), bare silicon
-# die 14 x 14 x 0.75 mm on top. Frame: centre of the underside.
+# AMD/Xilinx SBG484 lidless FCBGA: 19 x 19 mm substrate 1.75 mm thick with a 3.5 mm 45-degree pin-1 chamfer at (-x, -y)
+# (balls under it are not modelled), bare silicon die 14 x 14 x 0.75 mm on top. Frame: centre of the underside.
 CHIP_A, SUB_T, DIE_A, DIE_T = 0.019, 0.00175, 0.014, 0.00075
+CHIP_HALF, CHAMFER = CHIP_A / 2, 0.0035
 CHIP_H = SUB_T + DIE_T  # 2.5 mm
 CHIP_MASS = 0.005
 CHIP_START = (WAFFLE_XY[0], WAFFLE_XY[1], Z_SRC)
 DIE_TOP_START = Z_SRC + CHIP_H  # TOP + 0.0097
+_chip_poly = [
+    (-CHIP_HALF + CHAMFER, -CHIP_HALF), (CHIP_HALF, -CHIP_HALF), (CHIP_HALF, CHIP_HALF),
+    (-CHIP_HALF, CHIP_HALF), (-CHIP_HALF, -CHIP_HALF + CHAMFER),
+]
 CHIP = Mech(
     "chip", pos=CHIP_START, mass=CHIP_MASS, friction=0.7, iterations=32,
     shapes=[
-        box((0, 0, SUB_T / 2), (CHIP_A, CHIP_A, SUB_T), EMERALD),
+        extrude((0, 0, SUB_T / 2), _chip_poly, SUB_T, EMERALD, axis="z"),
         box((0, 0, SUB_T + DIE_T / 2), (DIE_A, DIE_A, DIE_T), SILICON),
-        _ghost(box((-0.0083, -0.0083, SUB_T + 0.0001), (0.003, 0.003, 0.0002), GOLD)),  # pin-1 mark (look only)
+        _ghost(box((-0.0052, -0.0052, CHIP_H + 0.00005), (0.0032, 0.0032, 0.0001), GOLD)),  # pin-1 mark (look only)
     ],
 )
 
-# Open-top 19 mm BGA test-socket nest (drop-in nest of the Enplas / Ironwood type): 56 x 56 x 10 mm PEEK, 25 x 25 mm floor,
-# 2 mm vertical wall then a 45 degree funnel to a 33 mm mouth.
+# Open-top 19 mm BGA test-socket nest (Enplas OTB-484 / Ironwood SG-BGA 19 mm class): 38 x 38 x 10 mm PEEK body,
+# 19.5 x 19.5 mm locating cavity (0.25 mm/side clearance), 2.5 mm vertical walls with a 3.65 mm 45-deg pin-1 corner
+# key at (-x, -y), then a 45-degree lead-in funnel to a 26.5 x 26.5 mm mouth.
 SOCKET_XY = (0.305, -0.065)
-SOCK = 0.056
+SOCK = 0.038
 Z_DST = Z_MAT + 0.004  # nest floor, TOP + 0.0080
+LOC_Z = 0.0065  # top of vertical locating walls (2.5 mm above floor)
 SOCK_TOP = Z_MAT + 0.010
-OPEN_HALF, MOUTH_HALF = 0.0125, 0.0165
-_wall_x = [(0.004, OPEN_HALF), (0.004, 0.028), (0.010, 0.028), (0.010, MOUTH_HALF), (0.006, OPEN_HALF)]  # (z, x)
-_wall_y = [(OPEN_HALF, 0.004), (0.028, 0.004), (0.028, 0.010), (MOUTH_HALF, 0.010), (OPEN_HALF, 0.006)]  # (y, z)
+OPEN_HALF, MOUTH_HALF = 0.00975, 0.01325
+KEY_LEG = 0.00365  # pin-1 corner key leg (x + y = -0.01585: 0.25 mm clearance to chip chamfer x + y = -0.01550)
+_wall_x = [(0.004, OPEN_HALF), (0.004, SOCK / 2), (0.010, SOCK / 2), (0.010, MOUTH_HALF), (LOC_Z, OPEN_HALF)]  # (z, x)
+_wall_y = [(OPEN_HALF, 0.004), (SOCK / 2, 0.004), (SOCK / 2, 0.010), (MOUTH_HALF, 0.010), (OPEN_HALF, LOC_Z)]  # (y, z)
+_key_poly = [(-OPEN_HALF, -OPEN_HALF), (-OPEN_HALF + KEY_LEG, -OPEN_HALF), (-OPEN_HALF, -OPEN_HALF + KEY_LEG)]
 SOCKET = Mech(
     "test_socket", pos=(SOCKET_XY[0], SOCKET_XY[1], Z_MAT), mass=None, friction=0.5,
     shapes=[
@@ -117,8 +130,9 @@ SOCKET = Mech(
         extrude((0, 0, 0), [(z, -x) for z, x in _wall_x], SOCK, IVORY, axis="y"),
         extrude((0, 0, 0), _wall_y, SOCK, IVORY, axis="x"),
         extrude((0, 0, 0), [(-y, z) for y, z in _wall_y], SOCK, IVORY, axis="x"),
-        _ghost(box((0, 0, 0.00405), (2 * OPEN_HALF, 2 * OPEN_HALF, 0.0001), DARK)),  # dark floor, look only
-        _ghost(box((0.0225, 0.0225, 0.01005), (0.004, 0.004, 0.0001), GOLD)),  # pin-1 mark
+        extrude((0, 0, (0.004 + LOC_Z) / 2), _key_poly, LOC_Z - 0.004, IVORY, axis="z"),
+        _ghost(box((0, 0, 0.00405), (2 * OPEN_HALF - 0.0002, 2 * OPEN_HALF - 0.0002, 0.0001), DARK)),  # dark floor
+        _ghost(box((-0.0158, -0.0158, 0.01005), (0.0045, 0.0045, 0.0001), GOLD)),  # pin-1 mark at (-x, -y)
     ],
 )
 
@@ -171,6 +185,22 @@ CRADLE = Mech(
 
 OBJECTS = [MAT_BOX, WAFFLE, CHIP, SOCKET, CRADLE, PEN]
 
+_plain_author = mechkit._author
+
+
+def _author_with_cup_contact(prim_path: str, cfg, translation=None, orientation=None, **kw):
+    prim = _plain_author(prim_path, cfg, translation=translation, orientation=orientation, **kw)
+    if getattr(cfg, "mech_name", "") in ("vac_pen", "chip") and prim.IsValid():
+        from pxr import PhysxSchema
+
+        base_prim = prim.GetStage().GetPrimAtPath(f"{prim_path}/base")
+        if base_prim.IsValid():
+            PhysxSchema.PhysxContactReportAPI.Apply(base_prim).CreateThresholdAttr(0.0)
+    return prim
+
+
+mechkit._author = _author_with_cup_contact
+
 # Contact watch (scorer side): a finger pad touching the chip.
 watch_touch("chip")
 
@@ -188,7 +218,7 @@ ARM_KEEP_OUT = [
 
 
 def _rot(q) -> np.ndarray:
-    return belimits._rot(q)
+    return quat_xyzw_to_matrix(np.asarray(q, dtype=float))
 
 
 def pen_frame(pen_s):
@@ -223,6 +253,23 @@ def chip_tilt_deg(chip_s) -> float:
     return float(belimits.tilt_deg(chip_s))
 
 
+def chip_yaw_deg(chip_s) -> float:
+    """Chip yaw angle (deg) in [-180, 180] relative to the aligned pin-1 corner (-x, -y)."""
+    _, R = chip_frame(chip_s)
+    return float(math.degrees(math.atan2(R[1, 0], R[0, 0])))
+
+
+CUP_SHAPE = PEN.shapes[3]
+DIE_SHAPE = CHIP.shapes[1]
+
+
+def cup_die_gap(pen_s, chip_s) -> float:
+    """Signed separation (m) between the silicone cup collider and the bare die collider."""
+    p_org, p_R = pen_frame(pen_s)
+    c_org, c_R = chip_frame(chip_s)
+    return float(mechkit.gap(CUP_SHAPE, (p_R, p_org), DIE_SHAPE, (c_R, c_org)))
+
+
 def pen_pitch_deg(pen_s) -> float:
     """Barrel's angle from horizontal."""
     _, R = pen_frame(pen_s)
@@ -246,27 +293,32 @@ def _in_mouth(xy) -> bool:
 PRIME_DEPTH = 0.0025  # button squeezed at least 2.5 mm: bellows expelled / vacuum broken
 RELEASE_DEPTH = 0.0006  # button back within 0.6 mm of rest: vacuum drawn
 HOVER_MIN = 0.005  # priming only counts with the cup at least 5 mm above the die (before touchdown)
-SEAL_TILT = 6.0  # deg
-SEAL_DZ, SEAL_DXY = 0.0025, 0.0025
+SEAL_TILT = 4.0  # deg
+SEAL_GAP = 0.0003  # m: max collider gap between cup and die (no air gap)
+SEAL_DZ_LO, SEAL_DZ_HI = -0.0015, 0.0003  # m: cup face centre relative to die top (allows compliant press, no gap)
+SEAL_DXY = 0.0020  # m: 9.53 mm cup stays wholly inside the 14 x 14 mm die
+SEAL_FORCE = 0.6  # N: minimum cup-to-die normal contact force for seal-forming press
+SEAL_PRESS_STEPS = 4  # 0.20 s of sustained cup-to-die contact and press while primed
 LIFT_Z = RIM + 0.010  # chip underside 10 mm above the pocket rim: TOP + 0.0205
 DROP_MAX = 0.015
 HARD_VZ = -0.55
 BAD_STEPS = 2  # 0.1 s
 FINAL_STEPS = 40  # 2.0 s
 STILL = 0.005  # m/s
-SOCK_XY_TOL, SOCK_Z_TOL, SOCK_TILT = 0.0035, 0.002, 5.0
+SOCK_XY_TOL, SOCK_Z_TOL, SOCK_TILT, SOCK_YAW_TOL = 0.0010, 0.0010, 3.0, 8.0
 PEN_XY_TOL, PEN_TILT = 0.015, 10.0
 RELEASE_CLEAR = 0.030
 PEN_FLOOR = TOP - 0.05
 
 FORCE_RELEASED: list = [None]  # offline test hook for check.py; None in live runs
+FORCE_CUP_FORCE: list = [None]  # offline/diagnostic hook for cup-to-die force (N); None in live Isaac runs
 _ST: dict = {}
 
 
 def _reset_state(env=None) -> None:
-    _ST.update(last=None, step=0, primed=False, pressed=False, sealed=False, lifted=False, zero=False, why="",
-               rel_pos=None, rel_R=None, bad_touch=0, bad_vz=0, bad_mat=0, rel_chip=0, rel_pen=0, still_chip=0,
-               still_pen=0, seals=0, broke=0)
+    _ST.update(last=None, step=0, ctrl_step=0, primed=False, pressed=False, sealed=False, lifted=False, transferred=False,
+               zero=False, why="", rel_pos=None, rel_R=None, bad_touch=0, bad_vz=0, bad_mat=0, rel_chip=0, rel_pen=0,
+               still_chip=0, still_pen=0, seals=0, broke=0, press_steps=0, press_peak=0.0, cup_force_step=0.0)
 
 
 _reset_state()
@@ -302,9 +354,27 @@ def _touching() -> bool:
         return False
 
 
+def _consume_cup_force():
+    """Peak cup-to-die normal force (N) over this step, or None if live PhysX contact view is unavailable."""
+    if FORCE_CUP_FORCE[0] is not None:
+        return float(FORCE_CUP_FORCE[0])
+    if _ST.get("cup_view_ok"):
+        f = float(_ST.get("cup_force_step", 0.0))
+        _ST["cup_force_step"] = 0.0
+        return f
+    if mechkit._ENV.get("env") is None:
+        return 0.0
+    return None
+
+
 def _update(objects) -> None:
     """Advance every latch once per control step (score() and success() get the same dict each step)."""
-    if objects is _ST["last"]:
+    ctrl = mechkit.step_count()
+    if ctrl > 0:
+        if ctrl == _ST["ctrl_step"]:
+            return
+        _ST["ctrl_step"] = ctrl
+    elif objects is _ST["last"]:
         return
     _ST["last"] = objects
     _ST["step"] += 1
@@ -318,10 +388,17 @@ def _update(objects) -> None:
     die = die_top(chip_s)
     dz = float(cup[2] - die[2])
     dxy = float(math.hypot(cup[0] - die[0], cup[1] - die[1]))
+    c_gap = cup_die_gap(pen_s, chip_s)
+    tilt = cup_tilt_deg(pen_s)
+    in_contact = (c_gap <= SEAL_GAP and SEAL_DZ_LO <= dz <= SEAL_DZ_HI and dxy <= SEAL_DXY and tilt <= SEAL_TILT)
+    cup_f = _consume_cup_force()
+    press_ok = in_contact and (cup_f is None or cup_f >= SEAL_FORCE)
 
     # --- the button: crossing into 'squeezed' primes (cup above the die) or breaks a seal; rising to 'released' seals
     if depth >= PRIME_DEPTH and not _ST["pressed"]:
         _ST["pressed"] = True
+        _ST["press_steps"] = 0
+        _ST["press_peak"] = 0.0
         if _ST["sealed"]:
             _ST["sealed"] = False
             _ST["broke"] += 1
@@ -331,11 +408,24 @@ def _update(objects) -> None:
     elif depth <= RELEASE_DEPTH and _ST["pressed"]:
         _ST["pressed"] = False
         if _ST["primed"] and not _ST["sealed"]:
-            if cup_tilt_deg(pen_s) <= SEAL_TILT and abs(dz) <= SEAL_DZ and dxy <= SEAL_DXY:
+            if (in_contact and _ST["press_steps"] >= SEAL_PRESS_STEPS
+                    and (cup_f is None or cup_f >= SEAL_FORCE or _ST["press_peak"] >= SEAL_FORCE)):
                 _seal(pen_s, chip_s, cup, die)
         _ST["primed"] = False
+        _ST["press_steps"] = 0
+        _ST["press_peak"] = 0.0
     elif depth <= RELEASE_DEPTH and not _ST["pressed"]:
         _ST["primed"] = False  # released in mid-air: the bellows is spent
+        _ST["press_steps"] = 0
+        _ST["press_peak"] = 0.0
+    elif _ST["primed"] and not _ST["sealed"]:
+        if press_ok:
+            _ST["press_steps"] += 1
+            if cup_f is not None:
+                _ST["press_peak"] = max(_ST["press_peak"], cup_f)
+        elif c_gap > 0.0006 or dz > 0.0006:
+            _ST["press_steps"] = 0
+            _ST["press_peak"] = 0.0
 
     # --- violations
     t_bad = _touching()
@@ -375,7 +465,7 @@ def _update(objects) -> None:
 
 
 def _seal(pen_s, chip_s, cup, die) -> None:
-    """The cup is flat and centred on the die: vacuum is drawn. The chip stays where it lies, snapped flush to the cup face."""
+    """The cup is pressed flat and centred on the die: vacuum is drawn. Chip offset is recorded flush to the cup face."""
     org, R = pen_frame(pen_s)
     corg, CR = chip_frame(chip_s)
     shift = cup - die  # the die top meets the cup face
@@ -389,8 +479,13 @@ def _on_release(chip_s) -> None:
     """The vacuum is broken: the chip must be over a pocket or the nest and no more than 15 mm above its floor."""
     xy = np.asarray(chip_s.pos, float)[:2]
     z = float(chip_s.low[2])
+    print(f"VACUUM released: chip at dx {1000 * (xy[0] - SOCKET_XY[0]):+.2f} dy {1000 * (xy[1] - SOCKET_XY[1]):+.2f} mm "
+          f"from the nest, underside {1000 * (z - Z_DST):+.2f} mm, yaw {chip_yaw_deg(chip_s):+.2f} deg, "
+          f"tilt {chip_tilt_deg(chip_s):.2f} deg", flush=True)
     if _in_mouth(xy):
         floor = Z_DST
+        if _ST["lifted"]:
+            _ST["transferred"] = True
     elif _in_pocket(xy):
         floor = Z_SRC
     else:
@@ -403,7 +498,9 @@ def _on_release(chip_s) -> None:
 def _on_socket_floor(chip_s) -> bool:
     org, _ = chip_frame(chip_s)
     return bool(math.hypot(org[0] - SOCKET_XY[0], org[1] - SOCKET_XY[1]) <= SOCK_XY_TOL
-                and -0.001 <= float(chip_s.low[2]) - Z_DST <= SOCK_Z_TOL and chip_tilt_deg(chip_s) <= SOCK_TILT)
+                and -0.001 <= float(chip_s.low[2]) - Z_DST <= SOCK_Z_TOL
+                and chip_tilt_deg(chip_s) <= SOCK_TILT
+                and abs(chip_yaw_deg(chip_s)) <= SOCK_YAW_TOL)
 
 
 def _pen_home(pen_s) -> bool:
@@ -418,7 +515,7 @@ def _tier(objects) -> float:
     if _ST["rel_chip"] < FINAL_STEPS or _ST["still_chip"] < FINAL_STEPS:
         return 0.0
     xy = np.asarray(chip_s.pos, float)[:2]
-    if _on_socket_floor(chip_s):
+    if _ST["transferred"] and _on_socket_floor(chip_s):
         if _pen_home(pen_s) and _ST["rel_pen"] >= FINAL_STEPS and _ST["still_pen"] >= FINAL_STEPS:
             return 1.0
         return 0.60
@@ -432,9 +529,11 @@ def score(objects) -> float:
     """0 for the whole run if a pad touches the chip, the chip drops onto the table or rim, falls hard (under -0.55 m/s),
     is released more than 15 mm above a floor or away from the pack and nest, is dragged through a pocket wall, or the pen
     falls off the table. Otherwise, with the chip released (vacuum off), still and both grippers 30 mm clear for the last 2 s:
-    1.0 chip flat on the nest floor (centre within 3.5 mm, underside within 2 mm, tilt within 5 deg) and the pen back on
-    its cradle (within 15 mm, within 10 deg of level) and still; 0.60 the chip flat on the nest floor; 0.25 the chip was
-    lifted at least 10 mm above the pocket rim by suction and is resting in a pocket or in the nest; else 0."""
+    1.0 suction lift and transfer completed, chip seated flat on the keyed nest floor (within 1 mm xy/z, 3 deg tilt) with
+    pin-1 aligned (within 8 deg yaw), and the pen back on its cradle (within 15 mm, 10 deg of level) and still;
+    0.60 suction lift and transfer completed and chip seated flat on the keyed nest floor with pin-1 aligned;
+    0.25 the chip was lifted at least 10 mm above the pocket rim by suction and is resting in a pocket or in the nest;
+    else 0."""
     _update(objects)
     if _ST["zero"]:
         return 0.0
@@ -480,15 +579,56 @@ def _weld_physics(environment) -> None:
     write_vel(root_velocity=_rows(chip, [[0.0] * 6]))
 
 
+def _bind_cup_view(environment) -> None:
+    try:
+        from isaaclab.sim.utils.stage import get_current_stage
+        from pxr import UsdPhysics
+
+        mechkit._enable_contact_processing()
+        stage = get_current_stage()
+        prims = [p for p in stage.Traverse() if "/env_0/" in p.GetPath().pathString]
+        rigid = [p.GetPath().pathString for p in prims if p.HasAPI(UsdPhysics.RigidBodyAPI)]
+        pen_paths = mechkit._match_bodies(rigid, "vac_pen", ("base",))
+        chip_paths = mechkit._match_bodies(rigid, "chip", ("base",))
+        if not pen_paths or not chip_paths:
+            raise RuntimeError(f"missing cup/chip rigid bodies: pen={pen_paths}, chip={chip_paths}")
+        sv = mechkit._physics_sim_view(environment)
+        view = sv.create_rigid_contact_view(pen_paths, filter_patterns=[chip_paths] * len(pen_paths),
+                                            max_contact_data_count=64 * len(pen_paths) * len(chip_paths))
+        _ST["cup_view"] = view
+        _ST["cup_view_ok"] = True
+        _ST["cup_view_failed"] = False
+    except Exception as exc:  # noqa: BLE001
+        _ST["cup_view"] = None
+        _ST["cup_view_ok"] = False
+        _ST["cup_view_failed"] = True
+        print(f"cup-die contact view unavailable ({exc!r}); using geometric contact dwell", flush=True)
+
+
+def _poll_cup_force(environment) -> None:
+    view = _ST.get("cup_view")
+    if view is None or _ST.get("sealed"):
+        return
+    try:
+        fm = view.get_contact_force_matrix(dt=mechkit._physics_dt(environment))
+        f = float(np.linalg.norm(mechkit._any_numpy(fm).reshape(-1, 3).sum(axis=0)))
+        if math.isfinite(f):
+            _ST["cup_force_step"] = max(float(_ST.get("cup_force_step", 0.0)), f)
+    except Exception:  # noqa: BLE001 - first step before sim.step() may not have contact buffers yet
+        pass
+
+
 def _install_weld(environment) -> None:
     if environment is None:
         return
     scene = environment.unwrapped.scene
     if getattr(scene, "_vacuum_weld", False):
         return
+    _bind_cup_view(environment)
     write = scene.write_data_to_sim
 
     def write_data_to_sim(*a, **k):
+        _poll_cup_force(environment)
         try:
             _weld_physics(environment)
         except Exception as exc:  # noqa: BLE001 - never stop the run on a hold error
@@ -508,6 +648,7 @@ def _step_hook(env=None) -> None:
         return
     try:
         _install_weld(env)
+        _poll_cup_force(env)
         states = {"vac_pen": mechkit._mech_state(env, PEN), "chip": mechkit._mech_state(env, CHIP)}
     except Exception:
         return
@@ -516,7 +657,8 @@ def _step_hook(env=None) -> None:
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Scripted demo (closedloop). Right arm holds the pen; left arm squeezes its button. The demo reads the fixed layout
-# (object_jitter=0), both arms' joint encoders and gripper openings, and the live travel of the pen's button joint.
+# (object_jitter=0), both arms' joint encoders and gripper openings, the live poses of vac_pen and chip, and the live
+# travel of the pen's button joint.
 demo = placeholder_demo
 
 PHI = -math.radians(35.0)  # right grip: approach +y tipped 35 deg down, pads closing across the barrel
@@ -555,9 +697,20 @@ def right_tcp(P, pitch: float) -> np.ndarray:
     return np.asarray(P, float) + ry(pitch) @ np.array([U_GRIP, 0.0, 0.0])
 
 
-def left_tcp(P, pitch: float, gap: float) -> np.ndarray:
-    """Left tool point for a pad gap ``gap``: the pad on the barrel's underside stays 0.5 mm clear of it as the gap closes."""
-    return np.asarray(P, float) + ry(pitch) @ np.array([U_BTN, 0.0, -PEN_R - 0.0005 + gap / 2])
+def rz(a: float) -> np.ndarray:
+    c, s = math.cos(a), math.sin(a)
+    return np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+
+
+def _pen_rot(pitch) -> np.ndarray:
+    """The pen's rotation from a nose-down pitch (float) or a full 3x3 rotation."""
+    return ry(pitch) if np.isscalar(pitch) else np.asarray(pitch, float)
+
+
+def left_tcp(P, pitch, gap: float) -> np.ndarray:
+    """Left tool point for a pad gap ``gap``: the pad on the barrel's underside stays 0.5 mm clear of it as the gap closes.
+    ``pitch`` is the barrel's nose-down pitch or the pen's full rotation (pitch then a small yaw about vertical)."""
+    return np.asarray(P, float) + _pen_rot(pitch) @ np.array([U_BTN, 0.0, -PEN_R - 0.0005 + gap / 2])
 
 
 TRAVEL = TOP + 0.20
@@ -582,9 +735,9 @@ def _btn_reading(ctx) -> float:
         return 0.0
 
 
-def _left_squeeze(ctx, L, R, P_fn, pitch, lrot, want_pressed: bool, g_from: float, g_to: float):
+def _left_squeeze(ctx, L, R, P_fn, pitch, lrot, want_pressed: bool, g_from: float, g_to: float, stop_at: float = 0.0031):
     """Close (or open) the left pads about the button, the lower pad held on the barrel's underside, with the right
-    hand's measured pose giving the pen. Closing stops when the button reads 3.0 mm or at g_to."""
+    hand's measured pose giving the pen. Closing stops when the button reads ``stop_at`` (3.1 mm) or at g_to."""
     secs = abs(g_from - g_to) / (2 * PRESS_SPEED)
     n = max(2, round(secs / CONTROL_DT))
     g = g_from
@@ -593,7 +746,7 @@ def _left_squeeze(ctx, L, R, P_fn, pitch, lrot, want_pressed: bool, g_from: floa
         g = g_from + (g_to - g_from) * i / n
         L._set_cartesian(left_tcp(P, pitch, g), lrot, -g / 2)
         yield
-        if want_pressed and _btn_reading(ctx) >= 0.0031:
+        if want_pressed and _btn_reading(ctx) >= stop_at:
             break
     return g
 
@@ -613,6 +766,82 @@ def _live_chip_bottom_centre(ctx):
         return np.array([o[0], o[1], float(c.low[2])])
     except Exception:
         return None
+
+
+def _live_chip_attitude(ctx):
+    """The chip's live attitude from its pose: (yaw in deg, 0 when its pin-1 chamfer faces the nest's pin-1 key; the x and
+    y components of its top-face normal). None offline."""
+    try:
+        c = ctx.obj("chip")
+        _, CR = chip_frame(c)
+        return chip_yaw_deg(c), float(CR[0, 2]), float(CR[1, 2])
+    except Exception:
+        return None
+
+
+def _rotvec(w) -> np.ndarray:
+    """Rotation matrix of a rotation vector (rad)."""
+    w = np.asarray(w, float)
+    a = float(np.linalg.norm(w))
+    if a < 1e-12:
+        return np.eye(3)
+    k = w / a
+    K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]])
+    return np.eye(3) + math.sin(a) * K + (1 - math.cos(a)) * K @ K
+
+
+class _Place:
+    """Right-hand placement servo over the nest. The commanded tool pose is the approach pose turned by ``D`` about
+    ``pivot`` and shifted by ``corr``; each step walks ``corr`` toward the live chip centre target (xy and height) and
+    turns ``D`` so the chip lies flat (top normal vertical) and square to the key (yaw 0). Both are capped (20 mm, 6 deg),
+    so a bad reading cannot throw the arm."""
+
+    def __init__(self, R, anchor, rot, pivot, target):
+        self.R, self.anchor, self.rot0 = R, np.asarray(anchor, float), np.asarray(rot, float)
+        self.pivot, self.target = np.asarray(pivot, float), np.asarray(target, float)
+        self.corr, self.D, self.good = np.zeros(3), np.eye(3), 0
+
+    def turn_deg(self) -> float:
+        return float(math.degrees(math.acos(max(-1.0, min(1.0, (np.trace(self.D) - 1) / 2)))))
+
+    def rot(self) -> np.ndarray:
+        return self.D @ self.rot0
+
+    def pos(self) -> np.ndarray:
+        return self.pivot + self.D @ (self.anchor - self.pivot) + self.corr
+
+    def pen_origin(self, P_nominal) -> np.ndarray:
+        """The pen origin the current command puts the pen at, from the nominal (unturned, uncorrected) origin."""
+        return self.pivot + self.D @ (np.asarray(P_nominal, float) - self.pivot) + self.corr
+
+    def tick(self, ctx, gain=0.12, ang_gain=0.30, tol=0.00025, yaw_tol=0.3, tilt_tol=0.5) -> None:
+        cur, att = _live_chip_bottom_centre(ctx), _live_chip_attitude(ctx)
+        if cur is not None and att is not None and not self.R.offline:
+            yaw, nx, ny = att
+            err = self.target - cur
+            self.corr = np.clip(self.corr + gain * err, -0.02, 0.02)
+            D = _rotvec(ang_gain * np.array([ny, -nx, -math.radians(yaw)])) @ self.D
+            a = math.acos(max(-1.0, min(1.0, (np.trace(D) - 1) / 2)))
+            if a <= math.radians(6.0):
+                self.D = D
+            ok = (float(np.hypot(err[0], err[1])) < tol and abs(err[2]) < 0.0005 and abs(yaw) < yaw_tol
+                  and math.degrees(math.asin(min(1.0, math.hypot(nx, ny)))) < tilt_tol)
+            self.good = self.good + 1 if ok else 0
+        self.R._set_cartesian(self.pos(), self.rot(), self.R.finger)
+
+    def settle(self, ctx, secs, need=6):
+        self.good = 0
+        for _ in range(max(1, round(secs / CONTROL_DT))):
+            self.tick(ctx)
+            yield
+            if self.good >= need:
+                break
+
+    def follow(self, ctx, flag):
+        """Keep servoing until ``flag[0]`` is set (the left hand's squeeze loads the pen by a few mm)."""
+        while not flag[0]:
+            self.tick(ctx)
+            yield
 
 
 def _servo(ctx, arms, anchors, rots, reading_fn, target, secs, gain=0.12, cap=0.02, tol=0.0008, use_z=False):
@@ -698,8 +927,8 @@ def demo_script(ctx):
     yield from _left_squeeze(ctx, L, R, P_live, PITCH, lrot45, True, G_OPEN, PRESS_G)
     yield from L.hold(0.4)
 
-    # 4) Touchdown: both hands lower together at 1.2 cm/s, steering the cup onto the die centre, a little past contact.
-    drop = HOVER_UP + 0.001
+    # 4) Touchdown: both hands lower together at 1.2 cm/s, steering the cup onto the die centre, and press 2.0 mm past contact.
+    drop = HOVER_UP + 0.0020
     n = round(drop / 0.012 / CONTROL_DT)
     base_r, base_l = R.pos.copy(), L.pos.copy()
     off = np.zeros(3)
@@ -713,7 +942,7 @@ def demo_script(ctx):
         R._set_cartesian(base_r + dz + off, rrot45, R.finger)
         L._set_cartesian(base_l + dz + off, lrot45, L.finger)
         yield
-    yield from ctx.wait(0.4)
+    yield from ctx.wait(0.5)
 
     # 5) Left opens, the button rebounds and the vacuum is drawn; the left hand backs away to +y while the right hand
     #    keeps the cup over the die.
@@ -746,36 +975,60 @@ def demo_script(ctx):
     P_sock = pen_origin_for_cup(FACE_SOCK, PITCH)
     yield from _mv(R, right_tcp(P_sock, PITCH), rrot45, speed=0.02)
     yield from R.trim_to_measured(right_tcp(P_sock, PITCH))
-    # centre the chip over the nest and set its underside 4 mm above the floor from the live chip pose
+    # Square and centre the chip over the keyed nest from its live pose: turn the pen about the nest centre until the
+    # chip lies flat (within 0.5 deg) and its pin-1 chamfer lines up with the key (yaw within 0.3 deg: the 19.5 mm pocket
+    # admits the 19 mm chip only within about 1.5 deg), centre it within 0.25 mm and set its underside 4 mm above the floor.
     tgt = np.array([SOCKET_XY[0], SOCKET_XY[1], Z_DST + 0.004])
-    anc = R.pos.copy()
-    corr = yield from _servo(ctx, [R], [anc], [rrot45], _live_chip_bottom_centre, tgt, 5.0, use_z=True)
-    yield from ctx.wait(0.3)
-    P_s = P_sock + corr
+    place = _Place(R, R.pos.copy(), rrot45, tgt, tgt)
+    yield from place.settle(ctx, 8.0)
+    if not R.offline:
+        print(f"PLACE servo: pen turned {place.turn_deg():.2f} deg, shifted {np.round(1000 * place.corr, 2)} mm, "
+              f"settled {place.good >= 10}", flush=True)
+    yield from ctx.wait(0.2)
 
-    # 7) Left hand squeezes the button again: the vacuum breaks and the chip drops 4 mm into the nest.
-    l_away = left_tcp(P_s, PITCH, G_OPEN) + np.array([0.0, 0.14, 0.03])
-    yield from _mv(L, l_away, lrot45, -G_OPEN / 2, speed=0.05)
-    yield from _mv(L, left_tcp(P_s, PITCH, G_OPEN), lrot45, speed=0.03)
-    yield from L.trim_to_measured(left_tcp(P_s, PITCH, G_OPEN))
-    off = np.zeros(3)
-    anchor_r = R.pos.copy()
+    # 7) Left hand squeezes the button again: the vacuum breaks and the chip drops 4 mm into the nest. The squeeze stops
+    #    at 1.8 mm of travel (still sealed) while the right hand walks out the load and re-squares the chip, then goes on
+    #    to 3.1 mm, so the chip is centred and square at the moment it lets go.
+    def rp():
+        return place.D @ ry(PITCH)
+
+    def P_live():
+        return np.asarray(R.measured_pos, float) - rp() @ np.array([U_GRIP, 0.0, 0.0])
+
+    P_s = place.pen_origin(P_sock)
+    lrot_p = place.D @ lrot45
+    l_away = left_tcp(P_s, rp(), G_OPEN) + np.array([0.0, 0.14, 0.03])
+    yield from _mv(L, l_away, lrot_p, -G_OPEN / 2, speed=0.05)
+    yield from _mv(L, left_tcp(P_s, rp(), G_OPEN), lrot_p, speed=0.03)
+    yield from L.trim_to_measured(left_tcp(P_s, rp(), G_OPEN))
     flag = [False]
+    g_now = [G_OPEN]
 
     def left_press():
-        yield from _left_squeeze(ctx, L, R, P_live, PITCH, lrot45, True, G_OPEN, PRESS_G)
+        g_now[0] = yield from _left_squeeze(ctx, L, R, P_live, rp(), lrot_p, True, G_OPEN, PRESS_G, stop_at=0.0018)
+        yield from L.hold(0.3)
+        flag[0] = True
+
+    yield from ctx.both(left_press(), place.follow(ctx, flag))
+    yield from place.settle(ctx, 3.0)
+    flag = [False]
+
+    def left_break():
+        g_from = min(g_now[0], G_OPEN)
+        g_now[0] = yield from _left_squeeze(ctx, L, R, P_live, rp(), lrot_p, True, g_from, PRESS_G)
         yield from L.hold(0.6)
         flag[0] = True
 
-    yield from ctx.both(left_press(), _right_follow(ctx, R, rrot45, anchor_r, off, flag, (SOCKET_XY[0], SOCKET_XY[1])))
+    yield from ctx.both(left_break(), place.follow(ctx, flag))
     # lift the pen clear while the button is still held, so the cup cannot re-seal
-    P_clear = P_s + off + np.array([0.0, 0.0, 0.030])
+    P_clear = place.pen_origin(P_sock) + np.array([0.0, 0.0, 0.030])
+    rot_hold = place.rot()
     yield from ctx.both(
-        _mv(L, L.pos + np.array([0.0, 0.0, 0.030]), lrot45, speed=0.03),
-        _mv(R, R.pos + np.array([0.0, 0.0, 0.030]), rrot45, speed=0.03),
+        _mv(L, L.pos + np.array([0.0, 0.0, 0.030]), lrot_p, speed=0.03),
+        _mv(R, R.pos + np.array([0.0, 0.0, 0.030]), rot_hold, speed=0.03),
     )
-    yield from _left_squeeze(ctx, L, R, P_live, PITCH, lrot45, False, PRESS_G, G_OPEN)
-    yield from _mv(L, L.pos + np.array([0.0, 0.14, 0.03]), lrot45, speed=0.05)
+    yield from _left_squeeze(ctx, L, R, P_live, rp(), lrot_p, False, g_now[0], G_OPEN)
+    yield from _mv(L, L.pos + np.array([0.0, 0.14, 0.03]), lrot_p, speed=0.05)
     yield from L.home(7.0)
 
     # 8) Pen back: lift, return over the cradle, unroll to level and set it on the saddles.
