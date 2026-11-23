@@ -12,6 +12,10 @@ Writes, only when run as a script (nothing on import):
                           screwed to the left rail's outer face
   v_block.stl         x2  90 deg V block that stages the roller at the start
   plate_rack.stl      x1  slotted stand that holds the torque plate upright at the start
+  drag_hub.stl        x1  inert-roller drag hub: slides onto the 7/16 in hex shaft at its middle (hex bore 11.4 mm
+                          across flats) and carries a 27 x 3.5 mm nitrile O-ring that rubs the tube bore (35.6 mm), so
+                          the tube turns on its shaft against a set drag, as the task's 0.10 N m tube drag; it stands
+                          in for the motor and gearbox housing (the sim's key and sleeve) inside a real Power Moller
 """
 
 from __future__ import annotations
@@ -33,6 +37,8 @@ PL_LEAD_HALF, PL_LEAD_D = 9.0, 5.0  # notch mouth flared to 18 mm over its lowes
 LEDGE_TOP, GUIDE_TOP = 28.0, 70.0
 POCKET = 10.0  # pocket depth off the rail face (4 mm plate, 3 mm a side)
 V_APEX, V_H, V_HX, V_T = 12.0, 28.0, 30.0, 16.0
+HUB_BORE_AF = 11.4  # 7/16 in (11.11 mm) hex shaft plus 0.3 mm
+HUB_PROFILE = [(0.0, 15.5), (18.0, 15.5), (18.0, 14.5), (22.5, 14.5), (22.5, 15.5), (40.0, 15.5)]  # (z, r) mm, O-ring groove
 
 
 def _area(poly):
@@ -138,6 +144,31 @@ def plate_rack():
     return t
 
 
+def drag_hub(n=24):
+    """A solid of revolution (HUB_PROFILE) with a straight hex bore along z, meshed directly (watertight)."""
+    ap = HUB_BORE_AF / 2
+
+    def inner(a):
+        k = round((a - math.pi / 6) / (math.pi / 3))
+        return ap / math.cos(a - (math.pi / 6 + k * math.pi / 3))
+
+    ang = [2 * math.pi * i / n for i in range(n)]
+    ring = [[(r * math.cos(a), r * math.sin(a), z) for a in ang] for z, r in HUB_PROFILE]
+    z0, z1 = HUB_PROFILE[0][0], HUB_PROFILE[-1][0]
+    i0 = [(inner(a) * math.cos(a), inner(a) * math.sin(a), z0) for a in ang]
+    i1 = [(inner(a) * math.cos(a), inner(a) * math.sin(a), z1) for a in ang]
+    t = []
+    for i in range(n):
+        j = (i + 1) % n
+        for a, b in zip(ring, ring[1:]):
+            t += [(a[i], a[j], b[j]), (a[i], b[j], b[i])]
+        t += [(i0[i], i1[j], i0[j]), (i0[i], i1[i], i1[j])]
+        o0, o1 = ring[0], ring[-1]
+        t += [(o0[i], i0[j], o0[j]), (o0[i], i0[i], i0[j])]
+        t += [(o1[i], o1[j], i1[j]), (o1[i], i1[j], i1[i])]
+    return t
+
+
 def write_stl(path, name, tris):
     with open(path, "w") as f:
         f.write(f"solid {name}\n")
@@ -154,7 +185,7 @@ def write_stl(path, name, tris):
 
 
 PARTS = {"side_rail": side_rail, "torque_plate": torque_plate, "plate_guide": plate_guide, "v_block": v_block,
-         "plate_rack": plate_rack}
+         "plate_rack": plate_rack, "drag_hub": drag_hub}
 
 
 def main(out_dir="."):
