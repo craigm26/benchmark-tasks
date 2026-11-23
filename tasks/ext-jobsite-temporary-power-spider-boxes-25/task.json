@@ -1,0 +1,21 @@
+{
+  "title": "Route a plugged-in cord out the bottom notch of a while-in-use cover and close the hood over it",
+  "category": "Impact on jobs",
+  "keywords": [
+    "temporary power",
+    "in-use cover",
+    "cord routing",
+    "hinged hood",
+    "bimanual",
+    "construction"
+  ],
+  "instruction": "Route the plugged-in cord down through the exit notch in the bottom of the open in-use cover, then close the hood until it latches.",
+  "context": "A jobsite receptacle must stay weatherproof with a cord plugged in (NEC 406.9(B)(1)): the cord goes out the in-use cover's bottom exit and the hood shuts over it, unpinched. Daily temporary-power work for construction laborers (O*NET 47-2061.00, 1.0M US), electricians (47-2111.00, 0.8M) and carpenters (47-2031.00, 0.7M).",
+  "setup": "Positions in cm from the midpoint between the arm bases (x forward, y left), heights above the table. A 3/4 in plywood backer 30 x 30 x 1.9 cm stands upright at x 42.6, y 0 (front face x 41.6), on a screwed plywood foot. On it, a grey die-cast aluminium 1-gang weatherproof box (Hubbell-Bell 5320-0, 11.4 tall x 7.0 wide x 5.1 deep) faces the robot, its front at x 36.5, centred at y 0 and 17 cm up, holding an ivory 15 A duplex receptacle (NEMA 5-15R). Over it, a clear polycarbonate TayMac MM410C while-in-use cover: base frame 10.2 wide x 14.0 tall x 1.0 thick (x 35.5 to 36.5, 10 to 24 cm up) and a 7.0 cm deep hood, 0.09 kg, hinged along its top edge and opened upward about 75 deg. The hood's bottom wall has its cord exit open: a U notch 1.8 cm wide and 5.2 cm deep from the base, at y +2.6 to +4.4. A black moulded NEMA 5-15P plug (4.0 cm long with strain relief, 2.8 x 3.6 cm body) is fully seated in the lower outlet, 15.1 cm up. Its yellow 12/3 SJTW cord (11 mm jacket, about 0.2 kg/m) runs straight out toward the robot past the hood's front plane to x 26.5, drops to the table at x 26, y +9, runs left to y +17, then back toward the robot to x 12, y +21; the rest of the cord coils off the table's left side. Nothing else is on the table.",
+  "scoring": "At the end, grippers open. Routed: followed from the plug, the cord's centreline stays inside the shut hood's volume until it leaves it downward through the bottom exit notch (crossing the cover's bottom plane inside the 1.8 cm notch) and never re-enters. 1.0: routed, hood shut on its base rim with the latch clicked (within 0.02 rad, about 1 deg, of shut), both hands at least 3 cm from the cover. 0.5: routed and the hood within 10 deg of shut. 0.25: routed, hood further open, both hands at least 3 cm from cord and cover. 0: the cord leaves through the hood's front or a side, crosses the bottom outside the notch, lies under the rim (hood held open on it), is pulled out of the plug, or the plug is no longer fully seated (any blade showing); doing nothing also scores 0.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Open the hood to its open stop, re-seat the plug and lay the cord back along tape marks (out of the plug, down to the table mark, left, then toward the robot). The receptacle is not wired and the cord's far end is unplugged.",
+  "fidelity": "Approximate. The cord is 20 rigid 2 cm segments with bend springs (0.012 N m/rad) toward its laid shape; the plug is welded in the outlet, so pulling the cord cannot unseat it (the real trial checks that). The hood is a rigid hinge with a 0.5 N m/rad detent spring that holds it open and snaps it shut past half way, standing in for the latch click; no gasket. The sim scores the last step with grippers closed; a hand on the cover cannot reach 1.0.",
+  "scores": "Dream-1 run: 0 (moved both arms a little, left the hood open and the cord where it started); demo: 1 (left hand drew the cord down, right hand pushed the hood shut, both arms backed off)",
+  "media": "M-ACPDTJ"
+}
