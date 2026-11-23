@@ -1,0 +1,21 @@
+{
+  "title": "Drop a motorized roller's hex ends point-up into its frame slots without pulling its cable, then fit its torque plate",
+  "category": "Impact on AI timelines",
+  "keywords": [
+    "robot building",
+    "AMR conveyor module",
+    "motorized roller",
+    "hex shaft clocking",
+    "tethered part",
+    "cable protection"
+  ],
+  "instruction": "Seat the roller's hex ends point-up in the frame slots without pulling its cable, then drop the torque plate over the hex.",
+  "context": "Building the conveyor top module of a mobile robot: a 24 V motorized drive roller's two hex shaft ends must drop blind into the frame slots at once, turned point-up, while its short power cable, which leaves through the motor shaft, stays slack; a torque plate then locks the hex against motor torque.",
+  "setup": "cm from the midpoint between the arm bases (x forward, y left); heights above the table. Frame: two dark blue aluminium side rails 17 x 0.6 x 7.5 tall along x from 21.5 to 38.5, inside faces at y +-11.8, each with an open-top slot at x 30, 1.3 wide (2.2 at a top chamfer), ending in a 120 deg V seat 4.4 up; cross ties 1.2 x 23.6 x 2 at x 22.1 and 37.9. On the left rail's outer face at x 30, a plate guide: posts at x 27.2 to 28.0 and 32.0 to 32.8 (1.4 deep, 2.8 to 7.0 up) with front lips leaving a 2.8 opening, over a ledge 2.8 up; beside it a green driver-card box 6 x 2.2 x 3.2 tall at x 20.5 to 26.5, y 12.4 to 14.6. Roller: zinc-plated steel tube 3.8 OD x 22.5, an 11 mm hex stub 2.75 long each end, 0.70 kg, along y at x 16.5, y 0, axis 3.9 up on two grey 90 deg V blocks (6 x 1.6 x 2.8) at y +-7.5, hex flats on top. Its black 0.6 OD cable leaves the left shaft end along the axis and runs 18.0 (out to y 21.5, back along x to 23.5) to a fixed 2.2 x 1.4 x 1 connector at x 23.5, y 15 to 17. Torque plate: 4 mm SUS304, 3.4 wide x 7.0 tall, 69 g, a 1.3 wide notch at the bottom (mouth flared to 1.8) ending in a point-up 120 deg apex, upright (faces along y) in a grey rack (5.2 x 3 base, 3 tall walls, 0.6 slot) at x 35.5, y 21.5.",
+  "scoring": "Measured at the end with both grippers open. Score 0 if the cable was ever pulled straight (its span from connector to shaft end over 95% of its 18.0 cm length for 0.25 s or more, judged from the video), or if it ends between the rails, in a slot or in the plate pocket. Otherwise 0.25 when both hex stubs sit in their slots: axes within 0.15 cm of the seat height (5.0 up) and 0.2 cm of the slot centre line, each stub across its own rail (the tube ends allow 0.55 cm either way) and level within 3 deg; +0.25 when also the hex is point-up within 5 deg (angle gauge on an end flat); +0.25 when also the torque plate is down in its guide over the hex (its notch apex within 0.15 cm of its seat, upright within 10 deg); +0.25 when also both hands are 3 cm clear of the roller, cable and plate. A part held more than 1 cm above its seat scores as not seated. Possible scores: 0, 0.25, 0.5, 0.75, 1.0.",
+  "run_limit": "3,600 steps (3 minutes at 20 Hz)",
+  "reset_notes": "Lift the plate back into its rack, lift the roller out of the slots and lay it on the V blocks with a flat on top of each hex stub, and lay the cable back along its taped outline. The cable stays plugged in at the connector.",
+  "fidelity": "Full size. The roller is one rigid body (0.70 kg design mass; no motor turns) welded to a 9-link cable chain anchored at its connector; the chain does not stretch, so a pull shows as its span reaching 95% of its length. Slots, V seats and the plate notch are contact geometry with 1 mm side clearance. The sim scores the last step without opening the grippers: a part held over 1 cm above its seat is not seated, and 1.0 needs hands 3 cm clear.",
+  "scores": "Dream-1 run: 0 (both arms reached the frame area, roller and plate stayed unseated); demo: 1 (left arm lifted the roller into the frame, set the plate by it, then parked clear)",
+  "media": "M-S46Z4G"
+}
