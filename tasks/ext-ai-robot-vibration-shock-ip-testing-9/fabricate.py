@@ -20,15 +20,19 @@ STAGE_PED_H_MM = 10.0
 STAGE_PEG_R_MM = 2.1
 STAGE_PEG_H_MM = 8.0
 
-KNOB_R_OUT_MM = 11.0
-KNOB_R_IN_MM = 9.0
-KNOB_H_MM = 18.0
+KNOB_R_OUT_MM = 8.5  # Carr Lane CLM-8-QAK: 17 mm hub, 38 mm across four prongs, 22 mm tall
+KNOB_R_IN_MM = 7.6
+KNOB_H_MM = 22.0
+PRONG_R_MM = 19.0
+PRONG_W_MM = 8.0
+PRONG_H_MM = 9.5
 LUG_X_INNER_MM = 3.25
+LUG_X_OUTER_MM = 7.8
 LUG_W_Y_MM = 7.6
 LUG_H_Z_MM = 2.2
-LUG_Z_OFFSET_MM = 7.7
-Y_WALL_Y_INNER_MM = 6.4
-Y_WALL_THICK_MM = 3.4
+LUG_Z_OFFSET_MM = 9.7
+Y_WALL_Y_INNER_MM = 4.8
+Y_WALL_THICK_MM = 3.0
 Y_WALL_W_X_MM = 6.0
 
 
@@ -148,13 +152,20 @@ def build_all(out_dir: Path | None = None) -> list[Path]:
     target.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
 
-    # 1. Quick-acting knob replica (22 mm OD x 18 mm tall, relieved bore + opposing half-thread lugs)
-    lug_wx = KNOB_R_IN_MM - LUG_X_INNER_MM
+    # 1. Quick-acting four-prong knob replica (38 mm across prongs, 17 mm hub, 22 mm tall, relieved bore + opposing
+    #    half-thread lugs). Print only as a stand-in; the real CLM-8-QAK is what clamps.
+    lug_wx = LUG_X_OUTER_MM - LUG_X_INNER_MM
     lug_cx = LUG_X_INNER_MM + lug_wx / 2.0
     knob_tris = []
     knob_tris.extend(_tube_tris(0.0, 0.0, 0.0, KNOB_H_MM, KNOB_R_IN_MM, KNOB_R_OUT_MM, sides=36))
     knob_tris.extend(_box_tris(-lug_cx, 0.0, KNOB_H_MM / 2.0 + LUG_Z_OFFSET_MM, lug_wx, LUG_W_Y_MM, LUG_H_Z_MM))
     knob_tris.extend(_box_tris(+lug_cx, 0.0, KNOB_H_MM / 2.0 - LUG_Z_OFFSET_MM, lug_wx, LUG_W_Y_MM, LUG_H_Z_MM))
+    pr_len = PRONG_R_MM - KNOB_R_IN_MM
+    pr_c = KNOB_R_IN_MM + pr_len / 2.0
+    pr_z = KNOB_H_MM - PRONG_H_MM / 2.0
+    for sx, sy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        knob_tris.extend(_box_tris(sx * pr_c, sy * pr_c, pr_z, pr_len if sx else PRONG_W_MM,
+                                   PRONG_W_MM if sx else pr_len, PRONG_H_MM))
     y_wall_cy = Y_WALL_Y_INNER_MM + Y_WALL_THICK_MM / 2.0
     knob_tris.extend(_box_tris(0.0, +y_wall_cy, KNOB_H_MM / 2.0, Y_WALL_W_X_MM, Y_WALL_THICK_MM, KNOB_H_MM))
     knob_tris.extend(_box_tris(0.0, -y_wall_cy, KNOB_H_MM / 2.0, Y_WALL_W_X_MM, Y_WALL_THICK_MM, KNOB_H_MM))
@@ -171,7 +182,7 @@ def build_all(out_dir: Path | None = None) -> list[Path]:
     _write_stl(p_cb, "crossbar", cb_tris)
     written.append(p_cb)
 
-    # 3. Staging block with pedestal and 5.2 mm alignment peg (44 x 44 x 12 mm + 10 mm pedestal + 10 mm peg)
+    # 3. Staging block with pedestal and 4.2 mm alignment peg (44 x 44 x 12 mm + 10 mm pedestal + 8 mm peg)
     st_tris = []
     st_tris.extend(_box_tris(0.0, 0.0, STAGE_SIZE_MM[2] / 2.0, *STAGE_SIZE_MM))
     ped_top = STAGE_SIZE_MM[2] + STAGE_PED_H_MM
