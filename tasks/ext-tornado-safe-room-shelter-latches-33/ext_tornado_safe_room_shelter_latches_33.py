@@ -1,5 +1,5 @@
 """On the station table: a steel equipment access box (200 x 210 x 120 mm) whose lid, hinged along its left top edge,
-stands open at 80 degrees on one gas strut in front of the box. The strut's chrome rod has an oil film at the seal (a
+stands open at 80 degrees on one gas strut in front of the box. The strut's chrome rod has a dark oil-stain band at the seal (a
 worn strut). A technician manikin behind the box rests a forearm on the back rim under the open lid, hand on a pipe
 union inside. Right of the box: a lift support clamp (aluminium C body, brass knob, red flag) standing on the table
 and a 10 mm combination wrench lying across a two-bar rest. Inside the box, along its right wall, a steel parts tray.
@@ -95,7 +95,7 @@ HATCH_SHAPES = [
     rod((BX[0], LOWER_EYE[1], LOWER_EYE[2]), (STRUT_X - 0.008, LOWER_EYE[1], LOWER_EYE[2]), 0.005, STEEL),
     rod((BX[0] - 0.002, UPPER_EYE[1], UPPER_EYE[2]), (STRUT_X - 0.008, UPPER_EYE[1], UPPER_EYE[2]), 0.005, STEEL),
     box((BX[0] - 0.001, UPPER_EYE[1], UPPER_EYE[2]), (0.004, 0.030, 0.030), GREEN),
-    # the strut: end sockets, black body, chrome rod with an oil film at the seal
+    # the strut: end sockets, black body, chrome rod with a dark oil-stain band at the seal (look-only)
     ball(tuple(strut_point(0.0)), 0.009, BLACK),
     rod(tuple(strut_point(0.009)), tuple(strut_point(BODY_LEN)), BODY_R, BLACK),
     rod(tuple(strut_point(BODY_LEN)), tuple(strut_point(ROD_END)), ROD_R, CHROME),
@@ -186,18 +186,32 @@ def _reset(env=None):
     _LATCH.update(violation=False, tight_off_rod=False, entered_locked=False, seated_loose=False)
 
 
-def clamp_seated(c) -> bool:
-    """The rod lies in the clamp's slot at both of the clamp's ends (rod centre at least 6 mm inside the mouth, so the
-    whole rod is in the slot, and within the slot height), the clamp is lined up with the rod within 15 degrees, and
-    its lower end is within 5 mm of the seal."""
-    r = c.rotation()
-    if abs(float(r[:, 1] @ U)) < math.cos(math.radians(15)):
-        return False
+ROD_INSET_MIN = 0.003  # the rod's outer face at least 3 mm inside the slot mouth (its centre 8 mm in): past the mouth
+# and into the hook lip's 4 mm, so a clamp hung against the lip (face 4 mm in) counts and a rod in the mouth does not
+
+
+def rod_insets(c) -> list:
+    """At each of the clamp's two ends: how far the rod's outer face (the side toward the mouth) sits inside the slot
+    mouth, in metres, and the rod centre's height off the slot centre line. This is what a real trial measures with a
+    straightedge laid across the mouth (the jaw tips): the rod must sit behind it."""
+    out = []
     for end in (-1.0, 1.0):
         q = c.to_world((ROD_SEAT_X, end * CL_LEN / 2, 0.0)) - np.array([0, 0, TOP])
         s = float((q - LOWER_EYE) @ U)
         p = c.to_local(strut_point(s) + np.array([0, 0, TOP]))
-        if not (SLOT_BOTTOM <= p[0] <= CL_MOUTH - 0.006 and abs(p[2]) <= SLOT_H / 2 + 0.001):
+        out.append((CL_MOUTH - p[0] - ROD_R, float(p[0]), float(p[2])))
+    return out
+
+
+def clamp_seated(c) -> bool:
+    """The rod lies in the clamp's slot at both of the clamp's ends (the rod's outer face at least 3 mm inside the
+    mouth, i.e. its centre at least 8 mm inside, and within the slot height), the clamp is lined up with the rod within
+    15 degrees, and its lower end is between 2 mm below and 5 mm above the seal."""
+    r = c.rotation()
+    if abs(float(r[:, 1] @ U)) < math.cos(math.radians(15)):
+        return False
+    for inset, px, pz in rod_insets(c):
+        if not (px >= SLOT_BOTTOM and inset >= ROD_INSET_MIN - 1e-9 and abs(pz) <= SLOT_H / 2 + 0.001):
             return False
     lo_end = c.to_world((ROD_SEAT_X, -CL_LEN / 2 * np.sign(r[:, 1] @ U), 0.0)) - np.array([0, 0, TOP])
     s_end = float((lo_end - LOWER_EYE) @ U)
