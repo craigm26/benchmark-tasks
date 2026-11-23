@@ -47,10 +47,10 @@ layout (object_jitter=0), its joint encoders and gripper opening.
 ## Fidelity
 
 Approximate. Each half of the book is a rigid board and a rigid text block on one spine hinge, with a 0.02 N m/rad
-spring toward its 130 degree set and light damping (assumed, not measured on the book); pages cannot fan or flop, so
-folding is only the spine closing. The glass recess (1.5 mm) and the arrow corner's place are taken from the product's
-layout, not measured on a unit; a real trial should check the book's resting V with a protractor so the sim's spine
-set and the real book agree on the 100 degree FOLD line. The lid is a damped hinge resting on its open stop and is not used. The sim scores the
+spring toward its 130 degree set and light damping (assumed, not measured on the book); pages cannot fan, flop or
+turn, so the sim book can never lose its spread, and the lost-page rule below only matters in a real trial, where the
+preview scan checks it. The glass recess (1.5 mm) and the arrow corner's place are taken from the product's layout,
+not measured on a unit. The lid is a damped hinge resting on its open stop and is not used. The sim scores the
 last step without opening the grippers, while a real trial opens them before measuring: a book still held up off the
 glass is not within 3 mm of it everywhere, so it scores as not face down, and a book whose lowest point is more than
 1 cm above the bezel counts as not placed and earns no 0.2 credit either. Contact friction is the simulator's (book
@@ -91,32 +91,38 @@ inspect-robots run --embodiment yam_arena --policy yam_scripted \
 
 - **Seed and layout:** `-E object_jitter=0` is required: the book's start V and the scanner are at fixed spots.
 - **Runtime per trial:** the demo script runs about 1,505 steps (75 s simulated), then the 8 s success hold; a Dream-1 trial runs up to 2,400 steps (2 minutes simulated).
-  Wall-clock time on one L40S, including Isaac Sim start-up: about 320 s for the demo and about 510 s for a full Dream-1 trial.
+  Wall-clock time on one L40S, including Isaac Sim start-up: about 320 s for the demo and about 470 s for a full Dream-1 trial.
 - **Score:** `task_score` reports 1.0 when `success()` holds for 8 s (score 1.0, the book still and both grippers 10 cm clear of it), otherwise
   `score()` at the end of the run.
 
 ## Scoring
 
-1. **0 for the whole run (FOLD, DROP)** if, after the book first leaves the table (its lowest point more than 1 cm up),
-   its pages close to under 100 degrees apart for 0.25 s, or it moves faster than 0.6 m/s for 0.1 s, or it comes back
-   down onto the table off the scanner.
+The score is the book's final placement. What happens on the way is free unless it damages the book or the scanner or
+loses the page: the spread may narrow or shut for a while in hand, the book may be set back on the table and
+regripped, and it may be moved quickly while held.
+
+1. **0 for the whole run (DROP, LOST PAGE)** if the book is dropped: its lowest point falls 10 cm or more within 0.2 s
+   with neither hand on it (a fall that can dent a board corner or chip the platen glass; a 10 cm fall lasts 0.14 s).
+   In a real trial, also 0 if the preview scan does not show the starting spread with page 129 at the arrow (the page
+   was lost when the book shut or leaves turned).
 2. **FACE:** both page faces within 3 degrees of the glass, and every page corner within 3 mm of the glass top and over
    the scanner. This also means the book is resting, not held up.
 3. **1.0:** FACE, and the right page's head edge (both corners) and fore-edge (both corners) are each 0 to 4 mm inside
    the glass edges at the arrow (x 23.2 cm, y -14.85 cm).
 4. **0.6:** FACE with only one of those two edges registered. **0.4:** FACE with neither.
-5. **0.2:** not FACE, but the book was held face down (both pages within 30 degrees of down) and open (within 20
-   degrees of flat) for 1 s at some time, and at the end it lies still on the scanner (its lowest point within 1 cm of
-   the bezel top, moving under 2 cm/s) and is not face up.
-6. **0** otherwise: the book never turned over, face up, standing, off the scanner, or still held up in the air
-   (lowest point more than 1 cm above the bezel), even if it was turned face down.
+5. **0.2:** not FACE, but at the end the book lies still on the scanner (its lowest point within 1 cm of the bezel
+   top, moving under 2 cm/s, every page corner over the scanner) with both pages facing down within 30 degrees and the
+   book open within 20 degrees of flat.
+6. **0** otherwise: the book never turned over, face up, standing, on the table, off the scanner, or still held up in
+   the air (lowest point more than 1 cm above the bezel).
 
 The end result must hold for the last 1 s: the lowest of these bands over the final 20 control steps counts, so a
 book that slides into or out of the corner at the very end is judged by where it stayed.
 
-A real trial measures FOLD and DROP from the video (frame count at the camera's rate), FACE with a protractor on the
-boards and a ruler at the page corners, and registration from a 75 dpi preview scan, where the page's head and
-fore-edge show against the glass edges.
+A real trial measures a drop from the video (fall height against the scanner's 4.2 cm body, hands visibly off the
+book), FACE with a protractor on the boards and a ruler at the page corners, and registration and the page from a
+75 dpi preview scan, where the page number and the page's head and fore-edge show against the glass edges. In the sim
+DROP also needs every finger pad of both grippers at least 2 cm from the book's bounding box when the fall ends.
 
 ## Real-world build and reset
 

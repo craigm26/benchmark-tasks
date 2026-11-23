@@ -198,14 +198,11 @@ FACE_TILT_DEG = 3.0           # both page faces within 3 degrees of the glass
 FACE_GAP = 0.003              # every page corner within 3 mm of the glass top
 REG_IN = 0.004                # head and fore-edge 0 to 4 mm inside the glass edges at the arrow
 REG_SLACK = 0.0005            # contact offset at the bezel lip
-FOLD_DEG = 100.0              # after lift-off, pages closing to under 100 degrees apart for 0.25 s
-FOLD_STEPS = 5
-DROP_SPEED = 0.6              # m/s for 0.1 s
-DROP_STEPS = 2
-LIFT_OFF = 0.010
-HELD_TILT_DEG = 30.0          # 0.2 band: held face down within 30 deg and open within 20 deg of flat for 1 s
+DROP_FALL = 0.10              # DROP: the book's lowest point falls 10 cm or more within 0.2 s, hands off it
+DROP_WINDOW = 4               # control steps (0.2 s; a 10 cm free fall takes 0.14 s)
+DROP_HANDS_OFF = 0.02         # neither gripper's pads within 2 cm of the book at the end of the fall
+HELD_TILT_DEG = 30.0          # 0.2 band: resting face down within 30 deg and open within 20 deg of flat
 HELD_OPEN_DEG = 20.0
-HELD_STEPS = 20
 FINAL_STEPS = 20              # the end result must hold for the last 1 s (the lowest band over those steps counts)
 
 _LATCH: dict = {}
@@ -250,52 +247,47 @@ def registration(state) -> tuple[bool, bool]:
 
 
 def observe(objects):
-    """Update the run latches from one step's book state."""
+    """Update the run latch (DROP) and the last 1 s of end bands from one step's book state. Only an unheld fall
+    that could dent the boards or chip the glass ends the run; the book may narrow, be set back on the table,
+    regripped or moved quickly in hand without losing anything."""
     s = _LATCH
     b = objects["book"]
     low = float(b.low[2])
-    if low > TOP + LIFT_OFF:
-        s["lifted"] = True
-    if s.get("lifted"):
-        s["fold_run"] = s.get("fold_run", 0) + 1 if opening_deg(b) < FOLD_DEG else 0
-        if s["fold_run"] >= FOLD_STEPS:
-            s["fold"] = True
-        fast = float(np.linalg.norm(b.lin_vel)) > DROP_SPEED
-        s["drop_run"] = s.get("drop_run", 0) + 1 if fast else 0
-        if s["drop_run"] >= DROP_STEPS:
-            s["drop"] = True
-        left, right, _, _ = book_pages(b)
-        if low < TOP + 0.005 and not _on_scanner_xy(np.vstack([left, right]).mean(0)):
-            s["drop"] = True                           # back on the table
-    _, _, nl, nr = book_pages(b)
-    held = (max(_tilt(nl), _tilt(nr)) <= HELD_TILT_DEG and opening_deg(b) >= 180.0 - HELD_OPEN_DEG
-            and low > TOP + LIFT_OFF)
-    s["held_run"] = s.get("held_run", 0) + 1 if held else 0
-    if s["held_run"] >= HELD_STEPS:
-        s["held_face_down"] = True
+    lows = s.setdefault("lows", [])
+    lows.append(low)
+    del lows[:-(DROP_WINDOW + 1)]
+    if max(lows) - low >= DROP_FALL and mk.released(b, clearance=DROP_HANDS_OFF):
+        s["drop"] = True
     s.setdefault("bands", []).append(band(objects))
     del s["bands"][:-FINAL_STEPS]
 
 
 def grade(objects) -> float:
-    """The run's score: 0 after FOLD or DROP, else the lowest band over the last 1 s (so a book that slides into
-    or out of the corner at the very end is judged by where it stayed)."""
-    if _LATCH.get("fold") or _LATCH.get("drop"):
+    """The run's score: 0 after a DROP, else the lowest end band over the last 1 s (so a book that slides into or
+    out of the corner at the very end is judged by where it stayed)."""
+    if _LATCH.get("drop"):
         return 0.0
     bands = _LATCH.get("bands") or [band(objects)]
     return min(bands)
 
 
 def band(objects) -> float:
-    s = _LATCH
+    """The final placement's band for one step."""
     b = objects["book"]
     if face_down(b):
         h, f = registration(b)
         return 1.0 if (h and f) else (0.6 if (h or f) else 0.4)
     _, _, nl, nr = book_pages(b)
-    if s.get("held_face_down") and nl[2] < 0 and nr[2] < 0 and resting(b):
+    if (max(_tilt(nl), _tilt(nr)) <= HELD_TILT_DEG and opening_deg(b) >= 180.0 - HELD_OPEN_DEG
+            and on_scanner(b) and resting(b)):
         return 0.2
     return 0.0
+
+
+def on_scanner(state) -> bool:
+    """Every page corner over the scanner body."""
+    left, right, _, _ = book_pages(state)
+    return all(_on_scanner_xy(p) for p in np.vstack([left, right]))
 
 
 REST_UP = 0.010               # a book whose lowest point is more than 1 cm above the bezel is still held up
@@ -310,14 +302,15 @@ def resting(state) -> bool:
 
 
 def score(objects):
-    """0 for the run if, after lift-off, the pages close to under 100 degrees apart for 0.25 s (FOLD), or the book
-    moves faster than 0.6 m/s for 0.1 s or lands back on the table (DROP). Otherwise, at the end: 1.0 when the book
-    lies face down (both page faces within 3 degrees of the glass, every page corner within 3 mm of the glass top and
-    over the scanner) with the right page's head and fore-edge each 0 to 4 mm inside the glass edges at the arrow;
-    0.6 face down with one of the two edges registered; 0.4 face down with neither; 0.2 not face down but held face
-    down (within 30 degrees) and open (within 20 degrees of flat) for 1 s at some time, not face up at the end and
-    resting on the scanner (lowest point within 1 cm of the bezel top, still); 0 otherwise, including a book still
-    held up in the air. The result must hold for the last 1 s: the lowest of these over the final 20 steps counts."""
+    """0 for the run only on DROP: the book's lowest point falls 10 cm or more within 0.2 s with neither gripper
+    within 2 cm of it (dropped, not carried). Narrowing the spread, setting the book back on the table, regripping
+    and fast moves in hand cost nothing. Otherwise the final placement, which must hold for the last 1 s (the lowest
+    band over the final 20 steps counts): 1.0 when the book lies face down (both page faces within 3 degrees of the
+    glass, every page corner within 3 mm of the glass top and over the scanner) with the right page's head and
+    fore-edge each 0 to 4 mm inside the glass edges at the arrow; 0.6 face down with one of the two edges registered;
+    0.4 face down with neither; 0.2 not face down but resting still on the scanner (lowest point within 1 cm of the
+    bezel top, every page corner over it) with both pages facing down within 30 degrees and the book open within
+    20 degrees of flat; 0 otherwise, including a book still held up in the air."""
     step = mk.step_count()
     if step == 0 or _LATCH.get("step") != step:      # score() and success() share a step: update once
         _LATCH["step"] = step
