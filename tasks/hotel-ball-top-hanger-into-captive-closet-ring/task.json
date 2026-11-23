@@ -1,0 +1,20 @@
+{
+  "title": "Thread a hotel ball-top hanger into a free-swinging captive closet ring and drop its stem into the seat",
+  "category": "Societal relatability",
+  "keywords": [
+    "bimanual",
+    "stabilization",
+    "hotel hanger",
+    "keyhole insertion",
+    "captive ring"
+  ],
+  "instruction": "Hang the wooden ball-top hanger in the chrome closet ring on the rail, then let go.",
+  "context": "Most hotel travelers know anti-theft ball-top hangers: they have no hook and hang only in a loose captive ring on the closet rod. One arm must catch and steady the free-sliding, free-swinging ring while the other threads the ball through its keyhole and drops the stem into the seat, unlike open-hook hanger or fixed-peg hanging tasks.",
+  "setup": "Positions in cm from the arm-base midpoint, x forward, y left, z above the oak station table. Closet bay, fixed dark walnut plywood: two side walls 11.3 x 1.8 x 30 cm tall (x 35.4 to 46.7, inner faces y +-35.0), back panel 1.2 x 73.6 x 30 cm (front face x 45.5), and fixed 3.2 cm OD chrome steel rod (70 cm long) along y at x 37.0, z 25.0. Captive security ring (Nahanco HHSRA100 style, 40 g total, brushed steel and chrome) on the rod at y +4.5, free to slide y -31.2 to +31.2 and swing +-54 deg: 3.8 cm ID chrome upper loop (4.6 cm OD, 1.0 cm wide) above a centered 3.2 x 4.8 x 4.4 cm brushed steel keyhole housing with a 2.2 x 2.2 cm upper front window above a 1.2 cm lower stem slot and inner cradle ledges. Valet tray, fixed charcoal wood: 5.65 x 44.0 x 0.8 cm base centered at x 22.6, y -4.0, front lip 1.6 cm tall at x 21.0, two rear pillars (1.8 x 2.4 x 5.4 cm) at y -18.5 and +10.5 leaving an open center bay. Wooden hotel ball-top suit hanger (Nahanco 60017BEC, 140 g, natural maple, 43.1 cm span, 1.3 cm thick, 20 deg shoulders, 1.0 cm pant bar, 1.6 cm chrome ball on a 0.6 cm stem, no hook) leans 12 deg back in the tray with its ball at x 24.5, y -4.0, z 14.2.",
+  "scoring": "Scored after release (all finger pads >= 3 cm from hanger and ring) and both parts still (< 1.5 cm/s, < 0.15 rad/s) for 2.0 s. Drop latch D: hanger lowest point > 2 cm below table for 0.5 s scores 0.0. Entry latch E: ball center inside the 2.2 x 2.2 cm pocket for 0.3 s. Seated: ball center within +-0.8 cm x, +-0.6 cm y, 5.45 to 6.2 cm below rod axis (in lower collar below window), lowest point >= 3.5 cm above table. 1.0: Seated, tilt <= 18 deg, |ring swing| <= 15 deg, walls clear >= 0.5 cm, released, still 2.0 s, no D. 0.5: Seated, released, still 2.0 s, no D, tilt 18 to 35 deg, swing 15 to 30 deg, or wall gap < 0.5 cm. 0.25: E, released, still 2.0 s, no D, not Seated within 0.5 limits. 0.0: D, held, moving, draped on rod, no E, or idle. Real trial: ruler >= 3.5 cm under bar, front/side photos for tilt/swing, video for E/release/D.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Lift the hanger 2.2 cm to align the ball with the upper keyhole window, draw it forward out of the ring, set it leaning 12 deg back in the valet tray against the rear pillars, and slide the ring back to the y +4.5 cm tape mark on the rod.",
+  "fidelity": "Rigid wood and metal parts. The ring rides on chained slide and hinge joints centered on the rod axis (3 mm radial clearance) rather than loose ring-on-rod contact. Keyhole window (22 x 22 mm), pocket depth (22 mm), and lower slot (12 mm) add 3 mm/side clearance around the 16 mm ball and 6 mm stem (housing 90 mm tall vs ~70 mm commercial). The sim scores the final step without opening grippers; finger clearance (>= 3 cm) enforces real release.",
+  "scores": "Dream-1 run: 0 (Right arm reached over the tray and pushed the hanger askew, it was never hung); demo: 1 (Left arm steadied the ring, right arm carried the hanger up, hung it, both arms backed off)",
+  "media": "M-PDKXGR"
+}
