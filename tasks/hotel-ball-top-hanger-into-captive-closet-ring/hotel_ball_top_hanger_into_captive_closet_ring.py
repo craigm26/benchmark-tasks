@@ -1,14 +1,14 @@
 """On the station table: a dark walnut tabletop closet bay (70 cm inner rod span, 30 cm tall, back panel front at x 45.5 cm,
 side walls at y +-35 cm) carrying a fixed 32 mm chrome closet rod at x 37.0 cm, 25 cm above the table. A 40 g
 brushed-steel and chrome captive anti-theft security ring (38 mm ID upper loop, lower centered keyhole housing with a
-22 x 22 mm upper window above a 12 mm captive stem slot) rides freely on the rod with unactuated lateral slide and
+19 x 18 mm upper window above a 9 mm captive stem slot; 73.5 mm overall) rides freely on the rod with unactuated lateral slide and
 pendulum swing, starting at y +4.5 cm. In front of the closet on a charcoal wooden valet tray (centered at x 22.6 cm,
-y -4.0 cm), a full-size 17 in (43.1 cm) natural maple hotel ball-top suit hanger (140 g, 16 mm chrome ball on a 6 mm
+y -4.0 cm), a full-size 17 in (43.1 cm), 5/8 in thick natural hardwood hotel ball-top suit hanger (140 g, 16 mm chrome ball on a 6 mm
 stem, no hook) leans 12 deg backward against two outer tray pillars.
 
 The task: steady the free-sliding, free-swinging captive ring with one hand while the other hand lifts the wooden
-ball-top hanger, threads the 16 mm chrome ball through the 22 x 22 mm upper keyhole window, lowers the 6 mm stem into
-the 12 mm lower captive collar so the ball seats on the inner cradle ledges, and releases both parts so the hanger hangs
+ball-top hanger, threads the 16 mm chrome ball through the 19 x 18 mm upper keyhole window, lowers the 6 mm stem into
+the 9 mm lower captive collar so the ball seats on the inner cradle ledges, and releases both parts so the hanger hangs
 freely clear of the table and closet walls.
 
 Requires -E object_jitter=0 (the closet and valet tray are fixed; the starting layout matches the setup description).
@@ -64,7 +64,7 @@ def _ry(angle: float) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------------------------------------------------
-# CLOSET: fixed dark walnut tabletop closet bay + 32 mm OD chrome steel rod + captive security ring (Nahanco HHSRA100)
+# CLOSET: fixed dark walnut tabletop closet bay + 32 mm OD chrome steel rod + captive security ring (National Hospitality Supply CPJRNG J-style, ball-top)
 ROD_X = 0.370
 ROD_Z = 0.250
 ROD_R = 0.016  # 32 mm OD (standard 1-1/4 in closet rod); front face x = 0.354 (20 mm clear of READY pad tips)
@@ -95,30 +95,47 @@ CLOSET_BASE_SHAPES = (
     cyl((0.0, 0.0, ROD_Z), ROD_R, 2.0 * STILE_Y, CHROME, axis="y"),
 )
 
-# RING: chained joints on CLOSET (Nahanco HHSRA100 A-ring, 38 mm ID loop + centered lower keyhole housing).
-# Centered symmetrically in x around x_local = 0 so unloaded and loaded ring hang plumb.
-# Pocket interior: x in [-0.011, +0.011], y in [-0.011, +0.011], z in [-0.0635, -0.0245].
-# Upper front keyhole window: y in [-0.011, +0.011] (22 mm), z in [-0.0465, -0.0245] (22 mm).
-# Lower front & floor captive stem slot: y in [-0.006, +0.006] (12 mm), z in [-0.0685, -0.0465].
-# Outer side cheeks: x in [-0.016, +0.016] (32 mm), y in +-[0.011, 0.024] (13 mm solid grasp cheeks).
+# RING: chained joints on CLOSET (National Hospitality Supply CPJRNG chrome J-style ring for ball-top hangers, rods up
+# to 1.5 in: 38 mm ID upper loop + centered lower keyhole housing). The seller page gives only the rod fit (ID >= 38 mm);
+# overall height 73.5 mm (loop top +21.5 mm to ledge bottom -52.0 mm about the rod axis), mass and keyhole sizes are
+# design values, re-derived from a caliper reading of the real ring at the one-time bench step (README). Centered symmetrically in x around x_local = 0 so the unloaded and loaded ring hang plumb.
+# Pocket interior: x in [-0.011, +0.011], y in [-0.0095, +0.0095], z in [-0.0495, -0.0245].
+# Upper front keyhole window: y in [-0.0095, +0.0095] (19 mm), z in [-0.0425, -0.0245] (18 mm, 1 mm/side on the ball).
+# Lower front & floor captive stem slot: y in [-0.0045, +0.0045] (9 mm, 1.5 mm/side on the 6 mm stem),
+# front lips z in [-0.0495, -0.0425], floor ledges z in [-0.052, -0.0495].
+# Outer side cheeks: x in [-0.016, +0.016] (32 mm), y in +-[0.0095, 0.0225] (13 mm solid grasp cheeks).
 RING_Y0 = 0.045
 RING_SLIDE_MAX_Y = 0.312
 RING_SWING_LIMIT = 0.95
-RING_WINDOW_Z = (-0.0465, -0.0245)
-RING_FLOOR_TOP_Z = -0.0635
-RING_LO = np.array([-0.023, -0.024, -0.0685], dtype=float)
-RING_HI = np.array([+0.023, +0.024, +0.0230], dtype=float)
+LOOP_RI = 0.019  # 38 mm ID (3 mm radial clearance on the 32 mm rod)
+LOOP_RO = 0.0215  # 43 mm OD (2.5 mm steel band)
+CAP_Z = (-0.0245, -0.0215)
+RING_WINDOW_Z = (-0.0425, -0.0245)
+WIN_HALF_Y = 0.0095
+SLOT_HALF = 0.0045
+RING_FLOOR_TOP_Z = -0.0495
+RING_BOTTOM_Z = -0.0520
+CHEEK_Z = (RING_BOTTOM_Z, CAP_Z[0])
+CHEEK_H = CHEEK_Z[1] - CHEEK_Z[0]
+CHEEK_ZC = (CHEEK_Z[0] + CHEEK_Z[1]) / 2.0
+LIP_Z = (RING_FLOOR_TOP_Z, RING_WINDOW_Z[0])
+RING_LO = np.array([-0.0215, -0.0225, RING_BOTTOM_Z], dtype=float)
+RING_HI = np.array([+0.0215, +0.0225, LOOP_RO], dtype=float)
+RING_OVERALL_H = LOOP_RO - RING_BOTTOM_Z  # 0.0735 m
+_LIP_W = WIN_HALF_Y - SLOT_HALF  # 5 mm
 
 RING_SWING_SHAPES = (
-    tube((0.0, 0.0, 0.0), 0.019, 0.023, 0.010, CHROME, axis="y", sides=24),  # 38 mm ID upper loop (3 mm radial gap)
-    box((0.0, 0.0, -0.0220), (0.032, 0.048, 0.005), STEEL),  # top cap above window (3.5 mm clear of rod)
-    box((0.0, +0.0175, -0.0465), (0.032, 0.013, 0.044), STEEL),  # left cheek (+y)
-    box((0.0, -0.0175, -0.0465), (0.032, 0.013, 0.044), STEEL),  # right cheek (-y)
-    box((+0.0135, 0.0, -0.0465), (0.005, 0.022, 0.044), STEEL),  # solid rear stop wall
-    box((-0.0135, +0.0085, -0.0575), (0.005, 0.005, 0.022), STEEL),  # front lower captive lip (+y)
-    box((-0.0135, -0.0085, -0.0575), (0.005, 0.005, 0.022), STEEL),  # front lower captive lip (-y)
-    box((0.0, +0.0085, -0.0660), (0.022, 0.005, 0.005), STEEL),  # bottom cradle ledge (+y)
-    box((0.0, -0.0085, -0.0660), (0.022, 0.005, 0.005), STEEL),  # bottom cradle ledge (-y)
+    tube((0.0, 0.0, 0.0), LOOP_RI, LOOP_RO, 0.010, CHROME, axis="y", sides=24),  # 38 mm ID upper loop
+    box((0.0, 0.0, sum(CAP_Z) / 2.0), (0.032, 0.045, CAP_Z[1] - CAP_Z[0]), STEEL),  # top cap above window
+    box((0.0, +(WIN_HALF_Y + 0.0065), CHEEK_ZC), (0.032, 0.013, CHEEK_H), STEEL),  # left cheek (+y)
+    box((0.0, -(WIN_HALF_Y + 0.0065), CHEEK_ZC), (0.032, 0.013, CHEEK_H), STEEL),  # right cheek (-y)
+    box((+0.0135, 0.0, CHEEK_ZC), (0.005, 2.0 * WIN_HALF_Y, CHEEK_H), STEEL),  # solid rear stop wall
+    box((-0.0135, +(SLOT_HALF + _LIP_W / 2.0), sum(LIP_Z) / 2.0), (0.005, _LIP_W, LIP_Z[1] - LIP_Z[0]), STEEL),
+    box((-0.0135, -(SLOT_HALF + _LIP_W / 2.0), sum(LIP_Z) / 2.0), (0.005, _LIP_W, LIP_Z[1] - LIP_Z[0]), STEEL),
+    box((0.0, +(SLOT_HALF + _LIP_W / 2.0), (RING_FLOOR_TOP_Z + RING_BOTTOM_Z) / 2.0),
+        (0.022, _LIP_W, RING_FLOOR_TOP_Z - RING_BOTTOM_Z), STEEL),  # bottom cradle ledge (+y)
+    box((0.0, -(SLOT_HALF + _LIP_W / 2.0), (RING_FLOOR_TOP_Z + RING_BOTTOM_Z) / 2.0),
+        (0.022, _LIP_W, RING_FLOOR_TOP_Z - RING_BOTTOM_Z), STEEL),  # bottom cradle ledge (-y)
 )
 
 RING_SLIDE = Joint(
@@ -160,7 +177,8 @@ CLOSET = Mech(
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
-# HANGER: free Mech modelling Nahanco 60017BEC natural maple 17 in anti-theft ball-top hotel suit hanger.
+# HANGER: free Mech modelling a National Hospitality Supply CPP88 17 in, 5/8 in thick natural solid hardwood ball-top
+# men's suit hanger with fixed trouser bar (seller page). Ball, stem, crown and mass are design values (not published).
 # Local origin (0, 0, 0) is the center of the 16 mm chrome ball. Spawn shapes incorporate the 12 deg backward recline
 # against the valet tray's rear pillars so the hanger spawns at rest with <0.5 mm settle drop and no tipping.
 START_LEAN_DEG = 12.0
@@ -168,9 +186,9 @@ START_LEAN_RAD = math.radians(START_LEAN_DEG)
 SHOULDER_SLOPE_DEG = 20.0
 SHOULDER_SLOPE_RAD = math.radians(SHOULDER_SLOPE_DEG)
 
-BALL_R = 0.008  # 16 mm diameter chrome ball (3.0 mm/side clearance in 22 mm window/pocket)
-STEM_R = 0.003  # 6 mm diameter chrome stem (3.0 mm/side clearance in 12 mm lower slot)
-WOOD_T = 0.013  # 1/2 in (13 mm) flat maple body thickness
+BALL_R = 0.008  # 16 mm diameter chrome ball (1.0 mm/side vertical, 1.5 mm/side lateral in the 19 x 18 mm window)
+STEM_R = 0.003  # 6 mm diameter chrome stem (1.5 mm/side clearance in the 9 mm lower slot)
+WOOD_T = 0.0159  # 5/8 in (15.9 mm) flat hardwood body thickness (CPP88 men's suit hanger, seller page)
 SH_H = 0.022  # 22 mm shoulder height perpendicular to slope
 SH_LEN = 0.204  # each shoulder bar length -> 431.2 mm (17 in) overall span
 SH_YC = 0.116
@@ -178,6 +196,7 @@ SH_ZC = -0.055 - (SH_YC - 0.020) * math.tan(SHOULDER_SLOPE_RAD)
 PANT_BAR_Z = -0.128
 PANT_BAR_R = 0.005
 PANT_BAR_LEN = 0.376
+CROWN_TOP_BELOW_BALL = 0.042  # wooden crown top 42 mm below the ball centre (crown box centre -55 mm, 26 mm tall)
 
 # Rotation from upright hanger reference frame to spawn (12 deg reclined) frame
 R_LEAN = _ry(START_LEAN_RAD)
@@ -212,7 +231,7 @@ HANGER_UPRIGHT_SHAPES = _hanger_shapes(np.eye(3))  # used by check.py clearance 
 BALL_START_X = 0.245
 BALL_START_Y = -0.040
 TRAY_BASE_H = 0.008
-BALL_START_Z = round(TOP + TRAY_BASE_H + 0.13356 + 0.0004, 5)  # 0.88946 m (TOP + 0.14196 m)
+BALL_START_Z = round(TOP + TRAY_BASE_H + 0.13356 + 0.0007, 5)  # TOP + 0.14226 m (0.4 mm settle gap with the 15.9 mm body)
 
 HANGER = Mech(
     "hanger",
@@ -228,10 +247,10 @@ HANGER = Mech(
 TRAY_X0 = 0.1975  # front edge of tray
 TRAY_X1 = 0.2540  # back edge of tray (56.5 mm deep, 100 mm clear of closet stiles)
 TRAY_W = 0.440  # 440 mm wide along y (covers full 431 mm hanger span)
-LIP_T = 0.012
+LIP_T = 0.0105
 LIP_H = 0.016
-LIP_BACK_X = 0.2097  # 0.8 mm clear ahead of hanger's bottom front edge
-PILLAR_FRONT_X = 0.2342  # 0.4 mm clear behind hanger's reclined outer shoulders
+LIP_BACK_X = 0.2083  # 0.8 mm clear ahead of hanger's bottom front edge
+PILLAR_FRONT_X = 0.2356  # 0.4 mm clear behind hanger's reclined outer shoulders
 PILLAR_D = 0.018
 PILLAR_W = 0.024
 PILLAR_H = 0.054
@@ -265,12 +284,15 @@ OBJECTS = [CLOSET, VALET_TRAY, HANGER]
 # Scoring
 POCKET_X_E = 0.009  # ball center inside 22 mm deep pocket (Latch E)
 POCKET_Y_E = 0.009
-POCKET_Z_E = (-0.0630, -0.0240)
+POCKET_Z_E = (-0.0490, -0.0250)
 ENTER_STEPS = 6  # 0.3 s at 20 Hz
 
 SEAT_X = 0.008  # ball seated in lower captive collar
 SEAT_Y = 0.006
-SEAT_Z = (-0.0620, -0.0545)  # resting z_rel is -0.05836 m; top at -0.0545 is strictly at/below window bottom (-0.0465)
+# Resting z_rel of the ball centre on the ledge edges: RING_FLOOR_TOP_Z + sqrt(BALL_R^2 - SLOT_HALF^2) = -0.04289 m.
+# The ball can only leave forward once its centre rises above -0.0359 m (lip tops -0.0425 m, 9 mm apart), so the band
+# top (-0.0395 m) keeps 3.6 mm of captive margin. Real trials score the same seat by a per-ring calibrated drop (README).
+SEAT_Z = (-0.0465, -0.0395)
 
 MIN_CLEAR_TABLE = 0.035  # 3.5 cm daylight gap under lowest point of hanger
 MIN_STILE_CLEAR = 0.005  # 5 mm clearance to each closet side wall
@@ -435,7 +457,9 @@ def _update(objects) -> dict:
 
 
 def score(objects) -> float:
-    """1.0: seated in lower captive collar, suspended >= 3.5 cm above table, tilt <= 18 deg, |ring_swing| <= 15 deg,
+    """Seated = ball centre in the lower captive slot in the swung ring frame (|x_rel| <= 8 mm, |y_rel| <= 6 mm, z_rel
+    in SEAT_Z) and hanger lowest point >= 3.5 cm above the table.
+    1.0: seated in lower captive collar, suspended >= 3.5 cm above table, tilt <= 18 deg, |ring_swing| <= 15 deg,
     stile clearance >= 5 mm, released (>= 3 cm clear of both hanger and ring), still (< 1.5 cm/s, < 0.15 rad/s) for
     2.0 s, and never dropped off the table.
     0.5: seated and suspended >= 3.5 cm, released and still for 2.0 s, never dropped, but tilt in 18..35 deg,
@@ -477,15 +501,15 @@ ARM_KEEP_OUT = [
 # Left arm catches and steadies the free-sliding, free-swinging ring from front-left (yaw -70 deg, pitch 90 deg so the
 # wrist and link4 stay well in front of the closet rod while clamping the 32 mm cheek without squirt); right arm lifts
 # the leaned wooden hanger high above the valet tray pillars before rotating upright, threads the 16 mm ball through
-# the 22 x 22 mm upper window in the live ring frame, lowers the 6 mm stem into the 12 mm captive collar, releases
+# the 19 x 18 mm upper window in the live ring frame, lowers the 6 mm stem into the 9 mm captive collar, releases
 # straight back, and both arms park at READY.
 demo = placeholder_demo
 
 RING_GOAL_Y = RING_Y0  # catch and steady the ring plumb at its starting y (+4.5 cm; 8.9 cm clear of left stile)
-LEFT_CHEEK_Z = TOP + ROD_Z - 0.056  # TOP + 0.194 m: lower +y cheek, clear of rod and hanger crown
+LEFT_CHEEK_Z = TOP + ROD_Z - 0.042  # TOP + 0.208 m: lower +y cheek, clear of rod and hanger crown
 R_LEFT = grip_rot(yaw=math.radians(-70.0), pitch=math.pi / 2.0, roll=0.0)  # front-left approach, all links clear of rod
 LEFT_APP = R_LEFT[:, 2]  # unit approach direction (+0.342, -0.940, 0)
-LEFT_TCP_LOCAL = np.array([+0.0005, 0.0265, -0.056], dtype=float)  # solid bite on +y cheek, clear of ball & stem path
+LEFT_TCP_LOCAL = np.array([+0.0005, 0.0250, -0.042], dtype=float)  # solid bite on +y cheek, clear of ball & stem path
 CLOSE_LEFT = -0.013  # 26 mm commanded gap -> steady hold on the 33 mm angled cheek without corner squirt
 
 GRASP_Y_LOCAL = -0.055  # 55 mm right of chrome stem on right wooden shoulder
@@ -500,8 +524,8 @@ OPEN_LEFT = -0.032  # 64 mm gap (clears 32 mm cheek cleanly at 20 deg approach a
 OPEN_RIGHT = -0.026  # 52 mm gap for pick inside valet tray
 OPEN_RIGHT_RELEASE = -0.036  # 72 mm gap for clean straight-back release off wooden shoulder
 
-WINDOW_Z_LOCAL = -0.0355  # vertical center of 22 x 22 mm upper keyhole window
-SEAT_RELEASE_Z_LOCAL = -0.0572  # ~1.0 mm above exact -0.05821 resting height on bottom cradle ledges
+WINDOW_Z_LOCAL = sum(RING_WINDOW_Z) / 2.0  # -0.0335: vertical center of the 19 x 18 mm upper keyhole window
+SEAT_RELEASE_Z_LOCAL = -0.0419  # ~1.0 mm above the -0.04289 resting height on the bottom cradle ledges
 
 
 def _right_tcp_for_ball(ball_world: np.ndarray, offset: np.ndarray | None = None) -> np.ndarray:
@@ -584,7 +608,7 @@ def _move_hanger_ball_in_ring(
 def demo_script(ctx):
     """Bimanual demo: left arm catches and steadies the sliding/swinging chrome ring from +y; right arm grasps the
     wooden hanger's right shoulder in the valet tray, lifts clear above the tray pillars and uprights it, threads the
-    16 mm ball through the 22 x 22 mm upper window, lowers the 6 mm stem into the 12 mm lower captive collar, releases
+    16 mm ball through the 19 x 18 mm upper window, lowers the 6 mm stem into the 9 mm lower captive collar, releases
     both hands straight back, and parks both arms at READY."""
     L, R = ctx.left, ctx.right
 
@@ -678,13 +702,13 @@ def demo_script(ctx):
         yield
     yield from R.hold(0.25)
 
-    # 3) Thread the 16 mm ball smoothly along +x through the 22 x 22 mm upper window into pocket center (~16 mm/s)
+    # 3) Thread the 16 mm ball smoothly along +x through the 19 x 18 mm upper window into pocket center (~16 mm/s)
     yield from _move_hanger_ball_in_ring(
         ctx, pre_local, pocket_local, RING_GOAL_Y, 2.0, off_box, gain=0.22, clamp_x_push=True
     )
     yield from R.hold(0.5)  # Latch E cleanly confirmed inside pocket
 
-    # 4) Lower the 6 mm stem 22 mm down the 12 mm lower captive slot until ball sits ~1 mm above bottom cradle ledges
+    # 4) Lower the 6 mm stem 9.4 mm down the 9 mm lower captive slot until ball sits ~1 mm above bottom cradle ledges
     yield from _move_hanger_ball_in_ring(
         ctx, pocket_local, seat_local, RING_GOAL_Y, 1.8, off_box, gain=0.18, clamp_x_push=True, clamp_z_down=True
     )

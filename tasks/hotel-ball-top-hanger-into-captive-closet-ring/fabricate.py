@@ -1,6 +1,6 @@
 """Generate ASCII STL files (in millimetres) for the wooden tabletop fixtures in this task.
 
-The hanger (Nahanco 60017BEC), captive chrome security ring (Nahanco HHSRA100), and 32 mm OD chrome closet rod
+The hanger (National Hospitality Supply CPP88 ball-top), captive chrome security ring (CPJRNG), and 32 mm OD chrome closet rod
 (standard 1-1/4 in closet pole) are off-the-shelf commercial products. This script writes optional 3D-printable STL
 models of the valet tray lean cradle and closet rod mounting stiles from the exact dimensions in the task file so a
 real-world rig can reproduce the 12 deg starting hanger lean and 250 mm rod height without woodworking tools.
@@ -20,13 +20,13 @@ from pathlib import Path
 TRAY_DEPTH = 56.5  # x: 197.5..254.0 mm
 TRAY_WIDTH = 440.0  # y
 TRAY_BASE_H = 8.0
-LIP_THICK = 12.0
+LIP_THICK = 10.5
 LIP_HEIGHT = 16.0
-LIP_X_OFFSET = 209.7 - 12.0 / 2.0 - (197.5 + 254.0) / 2.0  # front lip center in tray x
+LIP_X_OFFSET = 208.3 - 10.5 / 2.0 - (197.5 + 254.0) / 2.0  # front lip center in tray x
 PILLAR_DEPTH = 18.0
 PILLAR_WIDTH = 24.0
 PILLAR_HEIGHT = 54.0
-PILLAR_X_OFFSET = 234.2 + 18.0 / 2.0 - (197.5 + 254.0) / 2.0
+PILLAR_X_OFFSET = 235.6 + 18.0 / 2.0 - (197.5 + 254.0) / 2.0
 PILLAR_Y_OFFSET = 145.0
 
 STILE_DEPTH = 113.0  # x: 354..467 mm
