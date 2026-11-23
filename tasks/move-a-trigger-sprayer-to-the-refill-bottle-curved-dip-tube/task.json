@@ -1,0 +1,21 @@
+{
+  "title": "Move a trigger sprayer to the refill bottle: steer its curved dip tube down the neck, land the collar square",
+  "category": "Societal relevance",
+  "keywords": [
+    "spray bottle",
+    "refill",
+    "curved dip tube",
+    "flexible part insertion",
+    "narrow opening",
+    "household"
+  ],
+  "instruction": "Move the sprayer onto the full bottle: steer its curved dip tube all the way down the neck, then sit the collar on the neck.",
+  "context": "Everyone who buys a cleaner refill moves the trigger head to the full bottle. The dip tube keeps its curve, tip 2 cm off the head's axis, so centring the head over the 20 mm neck misses it: the hand must aim the tip in off axis and lead the head back as the curve passes, without kinking it.",
+  "setup": "Positions in cm from the midpoint between the arm bases, x forward, y left; table top z 0. Drip tray: charcoal plastic, 20 x 24 cm, 0.4 cm floor, 0.5 x 1.2 cm rims, centred x 25.5, y -9.5. Full bottle: Impact Products 5016 16 oz PET bottle with 473 mL water (0.50 kg), 7.0 cm body, 19.0 cm to the top of its 28/400 neck (20 mm bore), standing on the tray at x 27.0, y -3.5. Empty bottle: the same bottle empty (35 g) at x 24.0, y -16.5. Trigger sprayer: Impact Products 5816 (28/400 closure, 3.3 cm collar, red head, 40 g) sitting unscrewed on the empty bottle's neck, nozzle pointing +x; its 18.4 cm LDPE dip tube (6 mm OD) hangs straight for 10 cm then curves toward +x on a 17 cm radius, tip 2 cm off the axis and 0.5 cm above the bottom. Nothing else on the table.",
+  "scoring": "Measured after the gripper opens, with a ruler through the clear bottle, an angle card and a 1:1 tube template. Score 0 if at any time either bottle tips over 15 deg, slides over 3 cm or lifts over 1 cm for 0.5 s; if the tube takes a new permanent bend over 10 deg (off the template); or if the sprayer is still held or moving. 1.0: tube tip 16 cm or more below the neck top, the whole tube inside the full bottle, and the collar seated: seal face 0 to 6 mm above the neck top, centred within 2.5 mm, tilted 5 deg or less (no gap on one side). 0.5: tube in that deep and inside, collar not seated (on the thread crest, tilted or off centre). 0.25: tip 6 cm or more below the neck top with the sprayer resting on the full bottle. 0 otherwise (sprayer left in the empty bottle, tube outside, dropped).",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Lift the sprayer out of the full bottle, check the tube against the 1:1 template, stand it back in the empty bottle with the nozzle pointing +x, and stand both bottles on their marked tray outlines. Top the full bottle up to 473 mL; the tray catches drips.",
+  "fidelity": "Approximate. The dip tube is nine 2 cm rigid segments with elastic joints (LDPE, 0.64 N m/rad, yield 15.5 deg, then permanent set). Bottles are rigid, opaque, 16-sided; no liquid. The thread is look-only, so the seal face rests on the neck top (a real collar rests 3 to 5 mm up on the thread start; both score). The sim scores the last step without opening the gripper; a held sprayer scores 0. Tube coloured orange to show on camera.",
+  "scores": "Dream-1 run: 0 (moved arms a little, left sprayer on the empty bottle, ended parked); demo: 1 (right arm lifted sprayer off empty bottle, fed tube into full bottle, released, withdrew)",
+  "media": "M-XCMA3L"
+}
