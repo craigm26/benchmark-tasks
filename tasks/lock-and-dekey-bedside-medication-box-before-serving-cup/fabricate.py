@@ -1,4 +1,4 @@
-"""Print or cut files for the two custom parts that carry the lock's action, from the scene's own dimensions.
+"""Print or cut files for the custom parts, from the scene's own dimensions.
 
     python3 fabricate.py [out_dir]
 
@@ -10,6 +10,16 @@ writes ASCII STL files (millimetres) only when run as a script:
 - cam_tongue.stl: a 7 x 6.5 mm cam, 10 mm long beyond the lock's 18 mm plug, its 10 mm double-D hole for the lock's cam post
   drilled to suit the lock. Use it if the cam supplied with the lock is longer than 18.5 mm (it would strike the lid) or shorter than
   14 mm (it would miss the catch). Cut from 3 mm steel or print in PETG.
+
+- drop_box_body.stl: the key drop box's body, 100 (x) x 120 (y) x 118 mm outside, 2 mm walls, open underneath, its
+  top plate cut by a 40 x 100 mm slot, the floor 114 mm below the slot. This is a custom box, not a copy of a bought
+  one: the Barska CB12710 key drop box is 9.75 x 3 x 7.75 in with an 8.5 in slot, a wall-mount shape the robot cannot
+  reach into from above on the table, so the task uses this smaller top-slot box sized to the arm's reach. Two
+  hasp tabs at the foot of the robot-facing (-x) wall. Print in PETG (or fold from 1.2 mm steel to the same outline);
+  paint it navy and frame the slot with yellow tape.
+- drop_box_base.stl: the 2 mm floor plate it sits on, with matching hasp tabs. Screw the base to the table board;
+  drill the tabs 6 mm and lock body to base with a 3/4 in padlock (Master Lock 120D). The key can then only be taken
+  out by unlocking the padlock, which the nurse (operator) keeps.
 
 Everything else is bought (see the README parts list).
 """
@@ -27,6 +37,11 @@ FOOT_Z = (49.5, 53.5)  # above the box floor's underside
 LID_Z = 84.0
 
 CAM_W, CAM_T, CAM_R0, CAM_R1 = 7.0, 6.5, 8.5, 18.5
+
+# Key drop box (task file DROP_X, DROP_Y, DROP_H, DROP_T, DROP_SLOT_X, DROP_SLOT_Y), centred on its footprint.
+DROP_X, DROP_Y, DROP_H, DROP_T = 100.0, 120.0, 118.0, 2.0
+SLOT_X, SLOT_Y = 40.0, 100.0
+TAB_Y, TAB_X, TAB_Z = (30.0, 60.0), 14.0, 12.0  # hasp tabs on the -x face (y 30..60 mm from centre)
 
 
 def _box_tris(x0, x1, y0, y1, z0, z1):
@@ -72,9 +87,31 @@ def cam_tongue():
     return hub + arm
 
 
+def drop_box_body():
+    hx, hy, t = DROP_X / 2, DROP_Y / 2, DROP_T
+    sx, sy = SLOT_X / 2, SLOT_Y / 2
+    zb, zt = DROP_T, DROP_H  # sits on the 2 mm base plate
+    parts = [
+        _box_tris(hx - t, hx, -hy, hy, zb, zt), _box_tris(-hx, -hx + t, -hy, hy, zb, zt),  # x walls
+        _box_tris(-hx + t, hx - t, hy - t, hy, zb, zt), _box_tris(-hx + t, hx - t, -hy, -hy + t, zb, zt),  # y walls
+        _box_tris(sx, hx, -hy, hy, zt - t, zt), _box_tris(-hx, -sx, -hy, hy, zt - t, zt),  # top beside the slot
+        _box_tris(-sx, sx, sy, hy, zt - t, zt), _box_tris(-sx, sx, -hy, -sy, zt - t, zt),  # top at the slot ends
+        _box_tris(-hx - TAB_X, -hx, TAB_Y[0], TAB_Y[0] + 6.0, zb, zb + TAB_Z),  # hasp tabs (drill 6 mm)
+        _box_tris(-hx - TAB_X, -hx, TAB_Y[1] - 6.0, TAB_Y[1], zb, zb + TAB_Z),
+    ]
+    return [tri for p in parts for tri in p]
+
+
+def drop_box_base():
+    hx, hy = DROP_X / 2, DROP_Y / 2
+    return (_box_tris(-hx, hx, -hy, hy, 0.0, DROP_T)
+            + _box_tris(-hx - TAB_X, -hx, TAB_Y[0] + 7.0, TAB_Y[1] - 7.0, 0.0, DROP_T + TAB_Z))
+
+
 def main(out_dir):
     os.makedirs(out_dir, exist_ok=True)
-    for name, tris in (("lid_catch", lid_catch()), ("cam_tongue", cam_tongue())):
+    for name, tris in (("lid_catch", lid_catch()), ("cam_tongue", cam_tongue()),
+                       ("drop_box_body", drop_box_body()), ("drop_box_base", drop_box_base())):
         path = os.path.join(out_dir, name + ".stl")
         _write_stl(path, name, tris)
         print(f"wrote {path} ({len(tris)} triangles)")
