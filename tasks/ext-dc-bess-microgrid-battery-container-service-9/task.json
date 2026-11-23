@@ -1,0 +1,20 @@
+{
+  "title": "Reset a tripped data hall EPO station: turn its latched red head until it springs up, without pressing it",
+  "category": "Impact on AI timelines",
+  "keywords": [
+    "data hall",
+    "emergency power off",
+    "turn to release",
+    "latching mushroom head",
+    "grip and turn"
+  ],
+  "instruction": "The EPO station has tripped. Reset it so it is ready for power to be restored.",
+  "context": "Data hall emergency power off (EPO) stations cut power to a room of AI servers and latch when pressed. After a trip test or accidental trip, a data-center technician (O*NET 49-2011.00) or facilities electrician (47-2111.00) resets the head before power returns: turn it as its arrows show until it springs up, never pushing it back in.",
+  "setup": "Positions in cm from the midpoint between the arm bases: x forward, y left, z above the table. Wall: grey painted 1.2 cm plywood panel, 30 wide x 22 tall, front face at x 36.9, centred y 0, standing on the table on two dark 10 x 4 x 1.2 cm feet behind it, screwed down. EPO station: Schneider Harmony XALK178E, yellow polycarbonate cover (RAL 1021) on a light grey base, 6.8 x 6.8 cm face, 5.4 cm deep, screwed to the wall, front face at x 31.5, centred y 0, z 14.0. Its operator: chrome bezel ring 3.0 cm across, 0.8 cm proud; red 40 mm turn-to-release mushroom head (Harmony XB4BS8445 type), 1.2 cm cylindrical skirt plus a 0.8 cm domed front with two white clockwise arrows, axis along x at z 14.0. Start: tripped, head latched in, its skirt 1.32 cm and its front 3.4 cm proud of the cover (reset: 4.3 mm further out). Nothing else on the table.",
+  "scoring": "Read from the head's travel and turn angle and the grippers' distance from the head. 0.25: head turned at least 20 deg clockwise (seen from the front), which frees the latch. 0.60: that, and the head at least 3.8 mm out from its latched depth (within 0.5 mm of its reset stop) for the final 3 s. 1.00: that, and both grippers' pads at least 3 cm from the head at the end. Score 0 if, after the head came up, it is pushed back in by more than 1.5 mm for 0.5 s (re-tripped), if the latched head is pulled out by more than 2 mm for 0.5 s before it was turned, or if the station moves more than 2 mm. Doing nothing scores 0.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Press the head in by hand until it latches (44 N, about 4.3 mm). The station is unwired: no EPO circuit or power is connected, so a real trial is inert.",
+  "fidelity": "Approximate. The latch is modelled: the head's 800 N/m return spring is switched on once the head turns 20 deg (6.2 N on the reset stop), and a freed head pressed fully home latches again. Turn-back spring 0.15 N m/rad. The maker gives 4.3 mm travel and 44 N press force but no turn torque or spring force, so these are design values. The sim scores the last step without opening the grippers: a hand on the head caps it at 0.60.",
+  "scores": "Dream-1 run: 0 (both arms stayed near their start poses, never reached the station); demo: 1 (right arm gripped the red head, turned it, let go and backed away)",
+  "media": "M-UWCPY3"
+}
