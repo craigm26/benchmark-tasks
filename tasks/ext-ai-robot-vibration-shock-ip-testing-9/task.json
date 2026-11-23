@@ -1,0 +1,19 @@
+{
+  "title": "Tilt-slide a quick-acting knurled knob down a stud, square to engage threads, and snug",
+  "category": "Impact on AI timelines",
+  "keywords": [
+    "quick-acting knob",
+    "tilt-slide",
+    "thread engagement",
+    "HALT fixture",
+    "AI hardware testing"
+  ],
+  "instruction": "Tilt and slide the quick acting knob down the stud, square it on the crossbar, and snug it.",
+  "context": "AI hardware reliability technicians clamp GPU and edge-compute modules onto vibration and HALT shaker plates using slotted crossbars and quick-acting tilt knobs (Carr Lane CLM-8-QKK, Qualmark 750-0170). Pushing straight down jams on top threads, so the operator tilts ~19 deg to slide down, squares on the crossbar, and turns half a turn.",
+  "setup": "Positions are in cm from the midpoint between the arm bases (x forward, y left, z up; table top at z 74.75 cm). Subplate (fixed): anodized aluminum T-slot subplate, 16 x 20 x 1.2 cm, at x 26, y 0, z 74.75 cm, carrying a dark-anodized edge compute enclosure (9.0 x 10.3 x 3.5 cm, fixed) with silver heatsink stripes and a green PCB edge strip. Crossbar and stud (fixed): 6061-T6 aluminum crossbar, 2.5 x 18.0 x 1.2 cm, spanning y -9 to +9 cm across the module (top face at z 80.65 cm) on two 3.5 cm spacer sleeves at y +7.5 and y -7.5 cm. The left stud (y +7.5 cm) is pre-clamped with a hex nut; the active right M8x1.25 steel stud at x 26, y -7.5 cm rises 5.5 cm above the crossbar to z 86.15 cm (5.0 mm core diameter with 8.0 mm thread-crest collars). Staging block (fixed): anodized blue block, 4.4 x 4.4 x 1.2 cm, at x 20, y -15, z 74.75 cm with an 18 mm OD x 1.0 cm pedestal and 4.2 mm diameter, 0.8 cm tall brass peg. Quick-acting knob (free): black-oxide 12L14 steel Carr Lane CLM-8-QKK knob, 2.2 cm OD, 1.8 cm tall, 28 g, friction 0.6, with relieved bore, opposing half-thread lugs, and gold top index tab on the -x tilt side, upright on the staging peg (center x 20, y -15, z 77.85 cm).",
+  "scoring": "At the end of the run (grippers opened >= 3 cm from the knob): score 0.0 if a sustained latch (>= 3 steps, 0.15 s) fires for tip/drop (knob COM z < 69.75 cm or tilt > 30 deg) or straight-push jam (knob within 1.4 cm of stud axis, bottom within 0.6 cm of stud top 86.15 cm, tilt <= 5 deg). Otherwise: 0.25 if knob is on the stud (radial offset <= 0.6 cm) and slid down (bottom <= 83.15 cm, above 80.45 cm) but not squared; 0.50 if seated on crossbar (radial offset <= 0.6 cm, bottom within 0.2 cm of 80.65 cm, tilt <= 3 deg) without >= 0.5 clockwise turns; 0.75 if seated with >= 0.5 cumulative clockwise turns while seated but not yet released or knob is still moving (< 1.5 s settle); 1.00 if snugged (>= 0.5 turns), grippers >= 3 cm clear, and knob speed < 2 mm/s for the last 1.5 s (30 steps). Possible scores: 0.0, 0.25, 0.50, 0.75, 1.00.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "fidelity": "Approximate. M8x1.25 thread crests are discrete 8.0 mm collars and relieved half-threads are internal lugs, so 19 deg tilt clears crests while upright pushing jams. Axial thread draw and clamping preload are not resolved: tightening is scored from clockwise turns while seated; bodies are rigid. The simulator scores the last step without opening grippers; released() checks >= 3 cm clearance so a held knob never scores above 0.75.",
+  "scores": "Dream-1 run: 0 (right arm reached over the fixture, knob never visibly seated on the stud); demo: 1 (right arm lifted the knob, worked it onto the stud, then withdrew to home)",
+  "media": "M-E7L5XC"
+}
